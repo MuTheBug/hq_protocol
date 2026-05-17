@@ -61,16 +61,64 @@
 
 ## التشغيل
 
-### المتطلبات
+### 🚀 التشغيل السريع (موصى به)
+
+**Linux / macOS:**
 ```bash
-pip install -r requirements.txt
+./run.sh
 ```
 
-### التثبيت الأولي
+**Windows:**
+```cmd
+run.bat
+```
+
+سيقوم السكربت بكل شيء آلياً:
+1. التحقق من Python 3.10+
+2. إنشاء بيئة افتراضية في `.venv/`
+3. تثبيت كل المتطلبات من `requirements.txt`
+4. ترحيل قاعدة البيانات
+5. إنشاء حساب `admin` (إن لم يكن موجوداً)
+6. بذر مراكز الاحتجاز (27) وأنماط التعذيب (33)
+7. تشغيل السيرفر على `http://0.0.0.0:8000/`
+
+### خيارات السكربت
+
 ```bash
+# تغيير المنفذ
+PORT=9000 ./run.sh
+
+# تقييد الوصول للجهاز فقط
+HOST=127.0.0.1 ./run.sh
+
+# تخطّي تثبيت الحزم (تشغيل سريع لاحقاً)
+SKIP_DEPS=1 ./run.sh
+
+# كلمة مرور مخصصة للمسؤول
+ADMIN_PASSWORD='M@yP@ss!' ./run.sh
+
+# عدم استخدام بيئة افتراضية
+NO_VENV=1 ./run.sh
+
+# عرض المساعدة
+./run.sh --help
+```
+
+### بدائل: Make أو يدوي
+
+**عبر Make:**
+```bash
+make run      # تشغيل كامل
+make backup   # نسخة احتياطية JSON
+make help     # كل الأوامر
+```
+
+**يدوياً (بدون السكربت):**
+```bash
+pip install -r requirements.txt
 python manage.py migrate
-python manage.py create_admin              # ينشئ admin / haqquna2026
-python manage.py seed_reference_data       # يحمّل مراكز الاحتجاز وأنماط التعذيب
+python manage.py create_admin
+python manage.py seed_reference_data
 python manage.py runserver
 ```
 
@@ -81,9 +129,6 @@ python manage.py runserver
 
 > لإعادة ضبط كلمة المرور لاحقاً:
 > `python manage.py create_admin --password كلمة_جديدة`
->
-> أو لإنشاء حساب آخر:
-> `python manage.py create_admin --username NAME --password PWD --full-name "اسم كامل"`
 
 ---
 
