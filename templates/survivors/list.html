@@ -3,37 +3,105 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="text-haqquna"><i class="bi bi-people-fill"></i> ملفات الناجين <small class="text-muted">({{ total }})</small></h3>
-  <a href="{% url 'survivors:create' %}" class="btn btn-haqquna">
-    <i class="bi bi-person-plus-fill"></i> ملف جديد
-  </a>
+  <h3 class="text-haqquna">
+    <i class="bi bi-people-fill"></i> ملفات الناجين
+    <small class="text-muted">({{ total }})</small>
+  </h3>
+  <div class="btn-group">
+    <a href="{% url 'survivors:create' %}" class="btn btn-haqquna">
+      <i class="bi bi-person-plus-fill"></i> ملف جديد
+    </a>
+    <a href="{% url 'survivors:export_chooser' %}?{{ querystring }}" class="btn btn-outline-haqquna">
+      <i class="bi bi-download"></i> تصدير
+    </a>
+    {% if user.is_superuser or user.role == 'admin' %}
+    <a href="{% url 'survivors:import_json' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-upload"></i> استيراد JSON
+    </a>
+    {% endif %}
+  </div>
 </div>
 
+<!-- شريط الفلاتر الشامل (قابل للطي) -->
 <div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2">
-      <div class="col-md-4">{{ form.q.label_tag }} {{ form.q }}</div>
-      <div class="col-md-3">{{ form.status.label_tag }} {{ form.status }}</div>
-      <div class="col-md-2">{{ form.classification.label_tag }} {{ form.classification }}</div>
-      <div class="col-md-2">{{ form.gender.label_tag }} {{ form.gender }}</div>
-      <div class="col-md-1 d-flex align-items-end">
-        <button class="btn btn-haqquna w-100"><i class="bi bi-search"></i></button>
-      </div>
-    </form>
+  <div class="card-header d-flex justify-content-between" data-bs-toggle="collapse" data-bs-target="#filters" style="cursor:pointer;">
+    <span><i class="bi bi-funnel"></i> فلاتر البحث المتقدمة</span>
+    <small class="text-muted">اضغط للتوسيع/الطي</small>
+  </div>
+  <div class="collapse {% if request.GET %}show{% endif %}" id="filters">
+    <div class="card-body">
+      <form method="get">
+        <div class="row g-2 mb-2">
+          <div class="col-md-12">
+            <label class="form-label small mb-0">{{ form.q.label }}</label>
+            {{ form.q }}
+          </div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.classification.label }}</label>{{ form.classification }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.gender.label }}</label>{{ form.gender }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.marital_status_at_detention.label }}</label>{{ form.marital_status_at_detention }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.occupation_category.label }}</label>{{ form.occupation_category }}</div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.governorate_at_detention.label }}</label>{{ form.governorate_at_detention }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.birth_governorate.label }}</label>{{ form.birth_governorate }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.current_country.label }}</label>{{ form.current_country }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.current_governorate.label }}</label>{{ form.current_governorate }}</div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.political_activity_category.label }}</label>{{ form.political_activity_category }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.facility.label }}</label>{{ form.facility }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.torture_method.label }}</label>{{ form.torture_method }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.sexual_violence_reported.label }}</label>{{ form.sexual_violence_reported }}</div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.has_consent.label }}</label>{{ form.has_consent }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.consent_iiim.label }}</label>{{ form.consent_iiim }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.consent_icc.label }}</label>{{ form.consent_icc }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.has_medical_assessment.label }}</label>{{ form.has_medical_assessment }}</div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.has_video.label }}</label>{{ form.has_video }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.min_witnesses.label }}</label>{{ form.min_witnesses }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.min_overall_score.label }}</label>{{ form.min_overall_score }}</div>
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.detention_from.label }}</label>{{ form.detention_from }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.detention_to.label }}</label>{{ form.detention_to }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.created_from.label }}</label>{{ form.created_from }}</div>
+          <div class="col-md-3"><label class="form-label small mb-0">{{ form.created_to.label }}</label>{{ form.created_to }}</div>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-haqquna btn-sm">
+            <i class="bi bi-search"></i> بحث
+          </button>
+          <a href="{% url 'survivors:list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-counterclockwise"></i> إعادة تعيين
+          </a>
+          <a href="{% url 'survivors:export_chooser' %}?{{ querystring }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-download"></i> تصدير النتائج
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
 <div class="card">
+<div class="table-responsive">
 <table class="table table-haqquna table-hover mb-0">
   <thead>
     <tr>
       <th>المرجع</th>
       <th>الاسم</th>
       <th>الجنس</th>
-      <th>الحالة</th>
+      <th>المحافظة</th>
+      <th>المهنة</th>
       <th>التصنيف</th>
+      <th>الدرجة</th>
       <th>الموثّق</th>
-      <th>تاريخ الإضافة</th>
+      <th>التاريخ</th>
     </tr>
   </thead>
   <tbody>
@@ -41,28 +109,31 @@
     <tr>
       <td><strong>{{ s.case_reference }}</strong></td>
       <td><a href="{{ s.get_absolute_url }}">{{ s.full_name }}</a></td>
-      <td>{{ s.get_gender_display }}</td>
-      <td><small>{{ s.get_status_display }}</small></td>
+      <td><small>{{ s.get_gender_display }}</small></td>
+      <td><small>{{ s.get_governorate_at_detention_display|default:"—" }}</small></td>
+      <td><small>{{ s.get_occupation_category_display|default:"—" }}</small></td>
       <td><span class="badge badge-{{ s.file_classification|lower }}">{{ s.get_file_classification_display }}</span></td>
+      <td><strong class="text-haqquna">{{ s.overall_score }}/5</strong></td>
       <td><small>{{ s.documenter.username|default:"—" }}</small></td>
       <td><small>{{ s.created_at|date:"Y-m-d" }}</small></td>
     </tr>
     {% empty %}
-    <tr><td colspan="7" class="text-center p-4 text-muted">لا توجد ملفات بعد. ابدأ بإضافة أول ملف.</td></tr>
+    <tr><td colspan="9" class="text-center p-4 text-muted">لا توجد ملفات مطابقة.</td></tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 </div>
 
 {% if page.paginator.num_pages > 1 %}
 <nav class="mt-3">
   <ul class="pagination justify-content-center">
     {% if page.has_previous %}
-      <li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">السابق</a></li>
+      <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page.previous_page_number }}">السابق</a></li>
     {% endif %}
-    <li class="page-item active"><span class="page-link">{{ page.number }} من {{ page.paginator.num_pages }}</span></li>
+    <li class="page-item active"><span class="page-link">{{ page.number }} / {{ page.paginator.num_pages }}</span></li>
     {% if page.has_next %}
-      <li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">التالي</a></li>
+      <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ page.next_page_number }}">التالي</a></li>
     {% endif %}
   </ul>
 </nav>

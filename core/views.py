@@ -22,10 +22,6 @@ def dashboard(request):
         "class_a_files": survivor_qs.filter(file_classification="A").count(),
         "class_b_files": survivor_qs.filter(file_classification="B").count(),
         "class_c_files": survivor_qs.filter(file_classification="C").count(),
-        "still_detained": survivor_qs.filter(status="still_detained").count(),
-        "missing": survivor_qs.filter(status="missing").count(),
-        "deceased_custody": survivor_qs.filter(status="deceased_custody").count(),
-        "released": survivor_qs.filter(status="alive_released").count(),
         "female_survivors": survivor_qs.filter(gender="female").count(),
         "male_survivors": survivor_qs.filter(gender="male").count(),
         "total_witnesses": Witness.objects.count(),
@@ -36,9 +32,6 @@ def dashboard(request):
         "children_out_of_school": Child.objects.filter(
             Q(dropped_out=True) | Q(is_in_school=False)
         ).count(),
-        "children_orphaned": HouseholdSurvey.objects.aggregate(
-            total=Count("survivor")
-        ),
     }
 
     consent_compliant = survivor_qs.filter(

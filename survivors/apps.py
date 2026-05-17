@@ -4,3 +4,6 @@ from django.apps import AppConfig
 class SurvivorsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "survivors"
+
+    def ready(self):
+        from . import signals  # noqa: F401

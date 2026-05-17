@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-header bg-danger text-white">تأكيد حذف الملاحظة</div>
+  <div class="card-body">
+    <p>هل تريد فعلاً حذف هذه الملاحظة من ملف <strong>{{ note.survivor.case_reference }}</strong>؟</p>
+    <p class="border p-2 bg-light"><strong>{{ note.title }}</strong><br>{{ note.content|truncatechars:300 }}</p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> حذف نهائي</button>
+      <a href="{% url 'survivors:detail' note.survivor.pk %}" class="btn btn-secondary">إلغاء</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

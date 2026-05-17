@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}تصدير ملفات الناجين{% endblock %}
+
+{% block content %}
+<h3 class="text-haqquna mb-3"><i class="bi bi-download"></i> تصدير ملفات الناجين</h3>
+<p class="text-muted">
+  سيتم تصدير <strong>{{ count }}</strong> ملف بناءً على فلاتر البحث الحالية.
+  اختر الأعمدة التي تريد تصديرها ثم اضغط نوع التصدير.
+</p>
+
+<form method="get" id="exportForm">
+  <!-- نمرر الـquerystring الحالي للحفاظ على الفلاتر -->
+  {% for key, val in request.GET.items %}
+    {% if key != 'columns' %}<input type="hidden" name="{{ key }}" value="{{ val }}">{% endif %}
+  {% endfor %}
+
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between">
+      <span><i class="bi bi-grid-3x3"></i> اختر الأعمدة</span>
+      <div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll(true)">تحديد الكل</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAll(false)">إلغاء التحديد</button>
+        <button type="button" class="btn btn-sm btn-outline-haqquna" onclick="selectDefault()">الافتراضي</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        {% for key, label, _ in columns %}
+        <div class="col-md-3 col-sm-6 mb-2">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input column-cb" name="columns_select"
+              value="{{ key }}" id="col_{{ key }}"
+              {% if key in default_columns %}checked{% endif %}>
+            <label class="form-check-label small" for="col_{{ key }}">{{ label }}</label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-file-earmark"></i> اختر نوع التصدير</div>
+    <div class="card-body">
+      <button type="button" class="btn btn-success" onclick="submitWithFormat('excel')">
+        <i class="bi bi-file-earmark-excel"></i> Excel (.xlsx)
+      </button>
+      <button type="button" class="btn btn-danger" onclick="submitWithFormat('pdf')">
+        <i class="bi bi-file-earmark-pdf"></i> PDF (طباعة المتصفح)
+      </button>
+      {% if user.is_superuser or user.role == 'admin' or user.role == 'protection' %}
+      <a href="{% url 'survivors:export_json' %}" class="btn btn-warning">
+        <i class="bi bi-file-earmark-code"></i> JSON كامل لقاعدة البيانات
+      </a>
+      {% endif %}
+      <a href="{% url 'survivors:list' %}?{{ querystring }}" class="btn btn-secondary">إلغاء</a>
+    </div>
+  </div>
+</form>
+
+<script>
+function selectAll(on) {
+  document.querySelectorAll('.column-cb').forEach(c => c.checked = on);
+}
+function selectDefault() {
+  selectAll(false);
+  ['case_reference','full_name','gender','governorate_at_detention','classification','overall_score','first_detention_date','release_date'].forEach(k => {
+    const cb = document.getElementById('col_' + k);
+    if (cb) cb.checked = true;
+  });
+}
+function submitWithFormat(fmt) {
+  const f = document.getElementById('exportForm');
+  // Build columns parameter
+  const selected = Array.from(document.querySelectorAll('.column-cb:checked')).map(c => c.value);
+  // Remove old columns input if any
+  Array.from(f.querySelectorAll('input[name="columns"]')).forEach(i => i.remove());
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'columns'; inp.value = selected.join(',');
+  f.appendChild(inp);
+  if (fmt === 'excel') {
+    f.action = "{% url 'survivors:export_excel' %}";
+  } else {
+    f.action = "{% url 'survivors:export_pdf' %}";
+  }
+  f.method = 'get';
+  f.submit();
+}
+</script>
+{% endblock %}

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
@@ -10,11 +10,12 @@ from accounts.models import AuditLog
 
 from .forms import (
     DetentionEventForm, DetentionPeriodForm, InformedConsentForm,
-    MedicalAssessmentForm, ReleaseEventForm, SupportingDocumentForm,
+    InterviewForm, InterviewMediaForm, MedicalAssessmentForm,
+    ReleaseEventForm, SupportingDocumentForm, SurvivorNoteForm,
     SurvivorProfileForm, SurvivorSearchForm, WitnessForm,
 )
 from .models import (
-    InformedConsent, SurvivorProfile,
+    InformedConsent, Interview, InterviewMedia, SurvivorNote, SurvivorProfile,
 )
 
 
@@ -34,34 +35,164 @@ def _log_action(request, action, obj):
     )
 
 
+def _apply_survivor_filters(qs, cleaned):
+    """يطبّق نموذج البحث على QuerySet."""
+    if not cleaned:
+        return qs
+
+    q = cleaned.get("q")
+    if q:
+        qs = qs.filter(
+            Q(case_reference__icontains=q)
+            | Q(first_name__icontains=q)
+            | Q(father_name__icontains=q)
+            | Q(grandfather_name__icontains=q)
+            | Q(family_name__icontains=q)
+            | Q(mother_name__icontains=q)
+            | Q(national_id__icontains=q)
+            | Q(alias__icontains=q)
+        )
+
+    # حقول مباشرة
+    direct_filters = [
+        "classification:file_classification", "gender:gender",
+        "marital_status_at_detention:marital_status_at_detention",
+        "governorate_at_detention:governorate_at_detention",
+        "birth_governorate:birth_governorate",
+        "current_country:current_country",
+        "current_governorate:current_governorate",
+        "occupation_category:occupation_category",
+        "political_activity_category:political_activity_category",
+    ]
+    for spec in direct_filters:
+        form_key, field_key = spec.split(":")
+        val = cleaned.get(form_key)
+        if val:
+            qs = qs.filter(**{field_key: val})
+
+    # فرع/منشأة معينة
+    facility = cleaned.get("facility")
+    if facility:
+        qs = qs.filter(detention_periods__facility=facility)
+
+    # نمط تعذيب معين
+    torture = cleaned.get("torture_method")
+    if torture:
+        qs = qs.filter(detention_periods__torture_methods=torture)
+
+    # عنف جنسي
+    sv = cleaned.get("sexual_violence_reported")
+    if sv == "yes":
+        qs = qs.filter(detention_periods__sexual_violence_reported=True)
+    elif sv == "no":
+        qs = qs.exclude(detention_periods__sexual_violence_reported=True)
+
+    # نطاقات تاريخية
+    if cleaned.get("detention_from"):
+        qs = qs.filter(detention_events__detention_date__gte=cleaned["detention_from"])
+    if cleaned.get("detention_to"):
+        qs = qs.filter(detention_events__detention_date__lte=cleaned["detention_to"])
+    if cleaned.get("created_from"):
+        qs = qs.filter(created_at__date__gte=cleaned["created_from"])
+    if cleaned.get("created_to"):
+        qs = qs.filter(created_at__date__lte=cleaned["created_to"])
+
+    # حد أدنى للدرجة الإجمالية - نطبقها بحساب يدوي بعد التصفية
+    min_score = cleaned.get("min_overall_score")
+    if min_score is not None:
+        # تقدير: (r + c + co) / 3 >= min_score ⟹ r + c + co >= 3*min
+        from django.db.models import F
+        threshold = float(min_score) * 3
+        qs = qs.annotate(
+            _sum=F("reliability_score") + F("corroboration_score") + F("completeness_score")
+        ).filter(_sum__gte=threshold)
+
+    # موافقات
+    has_consent = cleaned.get("has_consent")
+    if has_consent == "yes":
+        qs = qs.filter(
+            consent__consent_documented=True,
+            consent__withdrawal_right_explained=True,
+            consent__confidentiality_limits_explained=True,
+            consent__intended_uses_explained=True,
+            consent__consent_withdrawn=False,
+        )
+    elif has_consent == "no":
+        qs = qs.filter(
+            Q(consent__isnull=True)
+            | Q(consent__consent_documented=False)
+            | Q(consent__consent_withdrawn=True)
+        )
+
+    if cleaned.get("consent_iiim") == "yes":
+        qs = qs.filter(consent__share_with_iiim=True)
+    elif cleaned.get("consent_iiim") == "no":
+        qs = qs.exclude(consent__share_with_iiim=True)
+
+    if cleaned.get("consent_icc") == "yes":
+        qs = qs.filter(consent__share_with_icc=True)
+    elif cleaned.get("consent_icc") == "no":
+        qs = qs.exclude(consent__share_with_icc=True)
+
+    # تقييم طبي
+    hm = cleaned.get("has_medical_assessment")
+    if hm == "yes":
+        qs = qs.filter(medical_assessments__isnull=False)
+    elif hm == "istanbul":
+        qs = qs.filter(medical_assessments__istanbul_protocol_compliant=True)
+    elif hm == "no":
+        qs = qs.filter(medical_assessments__isnull=True)
+
+    # فيديو
+    hv = cleaned.get("has_video")
+    if hv == "yes":
+        qs = qs.filter(
+            Q(interviews__media__media_type__in=["video", "audio"])
+            | Q(documents__document_type__in=["video", "audio"])
+        )
+    elif hv == "no":
+        qs = qs.exclude(
+            Q(interviews__media__media_type__in=["video", "audio"])
+            | Q(documents__document_type__in=["video", "audio"])
+        )
+
+    # شهود مستقلون
+    min_w = cleaned.get("min_witnesses")
+    if min_w:
+        qs = qs.annotate(
+            _ind_witnesses=Count(
+                "witnesses",
+                filter=Q(witnesses__is_independent=True,
+                         witnesses__consent_to_use_testimony=True),
+                distinct=True,
+            )
+        ).filter(_ind_witnesses__gte=min_w)
+
+    return qs.distinct()
+
+
 @login_required
 def survivor_list(request):
     form = SurvivorSearchForm(request.GET or None)
     qs = SurvivorProfile.objects.select_related("documenter").order_by("-created_at")
 
     if form.is_valid():
-        q = form.cleaned_data.get("q")
-        if q:
-            qs = qs.filter(
-                Q(case_reference__icontains=q)
-                | Q(first_name__icontains=q)
-                | Q(father_name__icontains=q)
-                | Q(family_name__icontains=q)
-                | Q(national_id__icontains=q)
-                | Q(alias__icontains=q)
-            )
-        if form.cleaned_data.get("status"):
-            qs = qs.filter(status=form.cleaned_data["status"])
-        if form.cleaned_data.get("classification"):
-            qs = qs.filter(file_classification=form.cleaned_data["classification"])
-        if form.cleaned_data.get("gender"):
-            qs = qs.filter(gender=form.cleaned_data["gender"])
+        qs = _apply_survivor_filters(qs, form.cleaned_data)
+    elif not form.is_bound:
+        pass
 
+    total = qs.count()
     paginator = Paginator(qs, 25)
     page = paginator.get_page(request.GET.get("page"))
 
+    # نمرّر سلسلة الـquerystring (بدون page) للاستخدام في pagination والـexport
+    qs_params = request.GET.copy()
+    qs_params.pop("page", None)
+    querystring = qs_params.urlencode()
+
     return render(request, "survivors/list.html", {
-        "form": form, "page": page, "total": qs.count(),
+        "form": form, "page": page, "total": total,
+        "querystring": querystring,
     })
 
 
@@ -69,6 +200,15 @@ def survivor_list(request):
 def survivor_detail(request, pk):
     survivor = get_object_or_404(SurvivorProfile, pk=pk)
     _log_action(request, AuditLog.Action.VIEW, survivor)
+    # نُحدّث الدرجات عند كل اطلاع لتعكس البيانات الحالية
+    survivor.recompute_scores(save=True)
+    survivor.refresh_from_db()
+
+    # فلترة الملاحظات حسب صلاحية الوصول للسرّية
+    notes_qs = survivor.notes.select_related("author")
+    if not (request.user.is_superuser or request.user.can_view_sensitive):
+        notes_qs = notes_qs.filter(is_confidential=False)
+
     return render(request, "survivors/detail.html", {
         "survivor": survivor,
         "consent": getattr(survivor, "consent", None),
@@ -79,6 +219,8 @@ def survivor_detail(request, pk):
         "witnesses": survivor.witnesses.select_related("facility_witnessed_at").all(),
         "documents": survivor.documents.all(),
         "medical_assessments": survivor.medical_assessments.all(),
+        "notes": notes_qs,
+        "interviews": survivor.interviews.prefetch_related("media").all(),
     })
 
 
@@ -294,3 +436,167 @@ def medical_add(request, pk):
         "form": form, "survivor": survivor,
         "title": _("إضافة تقييم طبي/نفسي"), "submit_label": _("حفظ"),
     })
+
+
+# ============================================================
+# الملاحظات (Notes)
+# ============================================================
+
+@login_required
+def note_add(request, pk):
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    survivor = get_object_or_404(SurvivorProfile, pk=pk)
+    if request.method == "POST":
+        form = SurvivorNoteForm(request.POST)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.survivor = survivor
+            note.author = request.user
+            note.save()
+            _log_action(request, AuditLog.Action.CREATE, note)
+            messages.success(request, _("تمت إضافة الملاحظة."))
+            return redirect("survivors:detail", pk=survivor.pk)
+    else:
+        form = SurvivorNoteForm()
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": survivor,
+        "title": _("إضافة ملاحظة"), "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def note_edit(request, pk):
+    note = get_object_or_404(SurvivorNote, pk=pk)
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    if request.method == "POST":
+        form = SurvivorNoteForm(request.POST, instance=note)
+        if form.is_valid():
+            form.save()
+            _log_action(request, AuditLog.Action.UPDATE, note)
+            messages.success(request, _("تم حفظ التعديلات."))
+            return redirect("survivors:detail", pk=note.survivor.pk)
+    else:
+        form = SurvivorNoteForm(instance=note)
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": note.survivor,
+        "title": _("تعديل ملاحظة"), "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def note_delete(request, pk):
+    note = get_object_or_404(SurvivorNote, pk=pk)
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    if request.method == "POST":
+        survivor_pk = note.survivor.pk
+        _log_action(request, AuditLog.Action.DELETE, note)
+        note.delete()
+        messages.success(request, _("تم حذف الملاحظة."))
+        return redirect("survivors:detail", pk=survivor_pk)
+    return render(request, "survivors/note_delete_confirm.html", {"note": note})
+
+
+# ============================================================
+# المقابلات والوسائط (Interviews & Media)
+# ============================================================
+
+@login_required
+def interview_add(request, pk):
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    survivor = get_object_or_404(SurvivorProfile, pk=pk)
+    next_seq = (survivor.interviews.count() or 0) + 1
+    if request.method == "POST":
+        form = InterviewForm(request.POST)
+        if form.is_valid():
+            interview = form.save(commit=False)
+            interview.survivor = survivor
+            interview.interviewer = request.user
+            interview.save()
+            _log_action(request, AuditLog.Action.CREATE, interview)
+            messages.success(request, _("تم إضافة المقابلة. أضف الفيديوهات/الملفات الآن."))
+            return redirect("survivors:interview_detail", pk=interview.pk)
+    else:
+        form = InterviewForm(initial={
+            "sequence_number": next_seq,
+            "is_first": next_seq == 1,
+        })
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": survivor,
+        "title": _("إضافة مقابلة جديدة"), "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def interview_detail(request, pk):
+    interview = get_object_or_404(Interview, pk=pk)
+    _log_action(request, AuditLog.Action.VIEW, interview)
+    return render(request, "survivors/interview_detail.html", {
+        "interview": interview,
+        "survivor": interview.survivor,
+        "media": interview.media.all(),
+    })
+
+
+@login_required
+def interview_edit(request, pk):
+    interview = get_object_or_404(Interview, pk=pk)
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    if request.method == "POST":
+        form = InterviewForm(request.POST, instance=interview)
+        if form.is_valid():
+            form.save()
+            _log_action(request, AuditLog.Action.UPDATE, interview)
+            messages.success(request, _("تم حفظ التعديلات."))
+            return redirect("survivors:interview_detail", pk=interview.pk)
+    else:
+        form = InterviewForm(instance=interview)
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": interview.survivor,
+        "title": _("تعديل المقابلة"), "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def media_add(request, interview_pk):
+    interview = get_object_or_404(Interview, pk=interview_pk)
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    if request.method == "POST":
+        form = InterviewMediaForm(request.POST, request.FILES)
+        if form.is_valid():
+            media = form.save(commit=False)
+            media.interview = interview
+            media.uploaded_by = request.user
+            media.save()
+            _log_action(request, AuditLog.Action.CREATE, media)
+            messages.success(
+                request,
+                _("تم رفع الملف. بصمة SHA-256: %(h)s...") % {"h": media.file_hash_sha256[:16]},
+            )
+            return redirect("survivors:interview_detail", pk=interview.pk)
+    else:
+        form = InterviewMediaForm()
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": interview.survivor,
+        "title": _("رفع فيديو/صوت/ملف للمقابلة #%(n)s") % {"n": interview.sequence_number},
+        "submit_label": _("رفع"),
+    })
+
+
+@login_required
+def media_delete(request, pk):
+    media = get_object_or_404(InterviewMedia, pk=pk)
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    if request.method == "POST":
+        interview_pk = media.interview.pk
+        _log_action(request, AuditLog.Action.DELETE, media)
+        media.delete()
+        messages.success(request, _("تم حذف الملف."))
+        return redirect("survivors:interview_detail", pk=interview_pk)
+    return render(request, "survivors/media_delete_confirm.html", {"media": media})

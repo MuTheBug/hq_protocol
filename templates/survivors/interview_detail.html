@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}مقابلة #{{ interview.sequence_number }} - {{ survivor.case_reference }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="text-haqquna">
+      <i class="bi bi-camera-video"></i> مقابلة #{{ interview.sequence_number }}
+      {% if interview.is_first %}<span class="badge bg-success">المقابلة الأولى</span>{% endif %}
+    </h3>
+    <p class="text-muted mb-0">
+      الناجي: <strong>{{ survivor.case_reference }} - {{ survivor.full_name }}</strong>
+    </p>
+  </div>
+  <div>
+    <a href="{% url 'survivors:interview_edit' interview.pk %}" class="btn btn-sm btn-outline-haqquna">
+      <i class="bi bi-pencil"></i> تعديل بيانات المقابلة
+    </a>
+    <a href="{% url 'survivors:detail' survivor.pk %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-right"></i> رجوع للملف
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header">بيانات المقابلة</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5">التاريخ</dt><dd class="col-7">{{ interview.interview_date|date:"Y-m-d" }}</dd>
+          <dt class="col-5">المدة</dt><dd class="col-7">{{ interview.duration_minutes|default:"—" }} دقيقة</dd>
+          <dt class="col-5">نوع المكان</dt><dd class="col-7">{{ interview.get_location_type_display }}</dd>
+          <dt class="col-5">تفاصيل المكان</dt><dd class="col-7">{{ interview.location_detail|default:"—" }}</dd>
+          <dt class="col-5">اللغة</dt><dd class="col-7">{{ interview.get_language_display }}</dd>
+          <dt class="col-5">المنهجية</dt><dd class="col-7">{{ interview.get_methodology_display }}</dd>
+          <dt class="col-5">المحاوِر</dt><dd class="col-7">{{ interview.interviewer.username|default:"—" }}</dd>
+          <dt class="col-5">مدوِّن الملاحظات</dt><dd class="col-7">{{ interview.note_taker.username|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header">الموافقة والاعتبارات</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-7">مسجَّلة</dt><dd class="col-5">{% if interview.recorded %}<span class="badge bg-success">نعم</span>{% else %}لا{% endif %}</dd>
+          <dt class="col-7">موافقة على التسجيل</dt><dd class="col-5">{% if interview.consent_to_record %}<span class="badge bg-success">نعم</span>{% else %}لا{% endif %}</dd>
+          <dt class="col-7">موافقة على نشر التسجيل</dt><dd class="col-5">{% if interview.consent_to_publish_recording %}<span class="badge bg-success">نعم</span>{% else %}لا{% endif %}</dd>
+          <dt class="col-7">اعتبارات النوع الاجتماعي</dt><dd class="col-5">{% if interview.gender_appropriate %}<i class="bi bi-check-circle text-success"></i>{% else %}—{% endif %}</dd>
+          <dt class="col-7">إحالة نفسية بعد المقابلة</dt><dd class="col-5">{% if interview.psychological_referral_after %}<i class="bi bi-check-circle text-success"></i>{% else %}—{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if interview.summary %}
+<div class="card mb-3">
+  <div class="card-header">ملخص المقابلة</div>
+  <div class="card-body" style="white-space:pre-wrap;">{{ interview.summary }}</div>
+</div>
+{% endif %}
+
+<!-- الفيديوهات والوسائط -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span><i class="bi bi-film"></i> الفيديوهات والوسائط ({{ media.count }})</span>
+    <a href="{% url 'survivors:media_add' interview.pk %}" class="btn btn-sm btn-outline-haqquna">
+      <i class="bi bi-cloud-upload"></i> رفع ملف
+    </a>
+  </div>
+  <div class="card-body">
+    {% for m in media %}
+    <div class="card mb-2">
+      <div class="card-body p-2">
+        <div class="d-flex justify-content-between">
+          <div>
+            <span class="badge bg-{% if m.media_type == 'video' %}danger{% elif m.media_type == 'audio' %}warning{% else %}info{% endif %}">
+              {{ m.get_media_type_display }}
+            </span>
+            <strong>{{ m.title }}</strong>
+            {% if m.part_number > 1 %}<small class="text-muted">جزء {{ m.part_number }}</small>{% endif %}
+          </div>
+          <div>
+            {% if m.duration_seconds %}
+              <small class="text-muted">{{ m.duration_seconds }} ث</small>
+            {% endif %}
+            <a href="{{ m.file.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
+              <i class="bi bi-download"></i> تنزيل
+            </a>
+            <a href="{% url 'survivors:media_delete' m.pk %}" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-trash"></i>
+            </a>
+          </div>
+        </div>
+        {% if m.media_type == 'video' %}
+        <video controls width="100%" style="max-height:400px;margin-top:8px;">
+          <source src="{{ m.file.url }}">
+          المتصفح لا يدعم تشغيل الفيديو
+        </video>
+        {% elif m.media_type == 'audio' %}
+        <audio controls style="width:100%;margin-top:8px;">
+          <source src="{{ m.file.url }}">
+        </audio>
+        {% endif %}
+        {% if m.description %}<div class="small text-muted mt-1">{{ m.description }}</div>{% endif %}
+        <div class="small mt-1">
+          <code style="font-size:0.7rem;">SHA-256: {{ m.file_hash_sha256|slice:":24" }}...</code>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-muted text-center mb-0">لم تُرفع أي ملفات بعد لهذه المقابلة</p>
+    {% endfor %}
+  </div>
+</div>
+
+{% if interview.notes %}
+<div class="card mt-3">
+  <div class="card-header">ملاحظات إضافية</div>
+  <div class="card-body" style="white-space:pre-wrap;">{{ interview.notes }}</div>
+</div>
+{% endif %}
+{% endblock %}

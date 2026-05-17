@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}استيراد بيانات JSON{% endblock %}
+
+{% block content %}
+<h3 class="text-haqquna mb-3"><i class="bi bi-upload"></i> استيراد بيانات JSON</h3>
+
+<div class="alert alert-warning">
+  <strong><i class="bi bi-exclamation-triangle"></i> تنبيه:</strong>
+  هذه العملية ستضيف/تحدّث سجلات في قاعدة البيانات.
+  الملف يجب أن يكون مُصدَّر مسبقاً من نفس النظام.
+  <strong>خذ نسخة احتياطية قبل الاستيراد.</strong>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">{{ form.file.label }}</label>
+        {{ form.file }}
+        <small class="text-muted d-block">{{ form.file.help_text }}</small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">{{ form.merge_strategy.label }}</label>
+        {{ form.merge_strategy }}
+      </div>
+      <button type="submit" class="btn btn-haqquna">
+        <i class="bi bi-cloud-upload"></i> استيراد
+      </button>
+      <a href="{% url 'survivors:list' %}" class="btn btn-secondary">إلغاء</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

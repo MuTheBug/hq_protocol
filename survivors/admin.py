@@ -4,8 +4,9 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import (
     ChainOfCustodyLog, DetentionEvent, DetentionFacility, DetentionPeriod,
-    InformedConsent, LongTermImpact, MedicalAssessment, ReleaseEvent,
-    SupportingDocument, SurvivorProfile, TortureMethod, Witness,
+    InformedConsent, Interview, InterviewMedia, LongTermImpact,
+    MedicalAssessment, ReleaseEvent, SupportingDocument, SurvivorNote,
+    SurvivorProfile, TortureMethod, Witness,
 )
 
 
@@ -123,19 +124,25 @@ class MedicalAssessmentInline(admin.TabularInline):
 @admin.register(SurvivorProfile)
 class SurvivorProfileAdmin(admin.ModelAdmin):
     list_display = (
-        "case_reference", "full_name", "status", "gender",
+        "case_reference", "full_name", "gender",
+        "governorate_at_detention",
         "file_classification_badge", "overall_score", "documenter", "created_at",
     )
     list_filter = (
-        "status", "file_classification", "gender",
-        "governorate_at_detention", "interview_recorded",
+        "file_classification", "gender",
+        "governorate_at_detention", "current_country",
+        "occupation_category", "political_activity_category",
+        "marital_status_at_detention",
     )
     search_fields = (
         "case_reference", "first_name", "father_name", "family_name",
         "national_id", "alias",
     )
     date_hierarchy = "created_at"
-    readonly_fields = ("case_uid", "created_at", "updated_at", "overall_score")
+    readonly_fields = (
+        "case_uid", "created_at", "updated_at", "overall_score",
+        "reliability_score", "corroboration_score", "completeness_score",
+    )
     autocomplete_fields = ["documenter"]
 
     fieldsets = (
@@ -151,20 +158,23 @@ class SurvivorProfileAdmin(admin.ModelAdmin):
         (_("بيانات الهوية"), {
             "fields": (
                 "national_id", "birth_date", "birth_date_approximate",
-                "birth_place", "gender", "nationality",
+                "birth_governorate", "birth_place_detail",
+                "gender", "nationality",
                 "marital_status_at_detention",
             ),
         }),
         (_("وقت الاعتقال"), {
             "fields": (
                 "address_at_detention", "governorate_at_detention",
-                "occupation_at_detention", "political_affiliation",
+                "occupation_category", "occupation_detail",
+                "political_activity_category", "political_activity_detail",
             ),
         }),
         (_("معلومات اتصال حالية"), {
             "fields": (
-                "current_phone", "current_email", "current_country",
-                "current_city", "next_of_kin_name", "next_of_kin_relation",
+                "current_phone", "current_email",
+                "current_country", "current_governorate", "current_city",
+                "next_of_kin_name", "next_of_kin_relation",
                 "next_of_kin_phone",
             ),
         }),
@@ -172,18 +182,10 @@ class SurvivorProfileAdmin(admin.ModelAdmin):
             "fields": ("photo_recent", "photo_before_detention"),
             "classes": ("collapse",),
         }),
-        (_("الحالة الراهنة"), {
-            "fields": ("status", "death_date", "death_circumstances"),
+        (_("التوثيق"), {
+            "fields": ("documenter",),
         }),
-        (_("بيانات المقابلة"), {
-            "fields": (
-                "documenter", "interview_date", "interview_location",
-                "interview_language", "interview_recorded",
-                "interview_recording_consent", "is_first_interview",
-                "previous_interviews_with",
-            ),
-        }),
-        (_("التقييم الداخلي"), {
+        (_("التقييم الآلي (محسوب من البيانات)"), {
             "fields": (
                 "reliability_score", "corroboration_score",
                 "completeness_score", "overall_score",
@@ -330,3 +332,59 @@ class InformedConsentAdmin(admin.ModelAdmin):
     )
     search_fields = ("survivor__case_reference",)
     autocomplete_fields = ["survivor"]
+
+
+@admin.register(SurvivorNote)
+class SurvivorNoteAdmin(admin.ModelAdmin):
+    list_display = (
+        "survivor", "note_type", "title", "is_pinned",
+        "is_confidential", "author", "created_at",
+    )
+    list_filter = ("note_type", "is_pinned", "is_confidential")
+    search_fields = (
+        "survivor__case_reference", "survivor__first_name",
+        "survivor__family_name", "title", "content",
+    )
+    autocomplete_fields = ["survivor", "author"]
+    date_hierarchy = "created_at"
+
+
+class InterviewMediaInline(admin.TabularInline):
+    model = InterviewMedia
+    extra = 0
+    fields = ("media_type", "title", "file", "part_number", "duration_seconds")
+    readonly_fields = ("file_hash_sha256",)
+
+
+@admin.register(Interview)
+class InterviewAdmin(admin.ModelAdmin):
+    list_display = (
+        "survivor", "sequence_number", "interview_date",
+        "location_type", "interviewer", "recorded", "media_count",
+    )
+    list_filter = (
+        "is_first", "recorded", "location_type", "methodology",
+        "language", "gender_appropriate",
+    )
+    search_fields = (
+        "survivor__case_reference", "survivor__first_name",
+        "survivor__family_name", "summary",
+    )
+    autocomplete_fields = ["survivor", "interviewer", "note_taker"]
+    date_hierarchy = "interview_date"
+    inlines = [InterviewMediaInline]
+
+
+@admin.register(InterviewMedia)
+class InterviewMediaAdmin(admin.ModelAdmin):
+    list_display = (
+        "title", "media_type", "interview", "part_number",
+        "duration_seconds", "uploaded_by",
+    )
+    list_filter = ("media_type",)
+    search_fields = (
+        "title", "description",
+        "interview__survivor__case_reference",
+    )
+    readonly_fields = ("file_hash_sha256", "file_size_bytes")
+    autocomplete_fields = ["interview", "uploaded_by"]

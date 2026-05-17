@@ -19,22 +19,28 @@
           <span class="badge badge-{{ survivor.file_classification|lower }}">
             {{ survivor.get_file_classification_display }}
           </span>
-          <span class="badge bg-info">{{ survivor.get_status_display }}</span>
           <span class="badge bg-light text-dark">{{ survivor.get_gender_display }}</span>
         </div>
         <div class="text-muted small">
-          <i class="bi bi-geo-alt"></i> {{ survivor.governorate_at_detention|default:"—" }} ·
-          <i class="bi bi-briefcase"></i> {{ survivor.occupation_at_detention|default:"—" }} ·
+          <i class="bi bi-geo-alt"></i> {{ survivor.get_governorate_at_detention_display|default:"—" }} ·
+          <i class="bi bi-briefcase"></i> {{ survivor.get_occupation_category_display|default:"—" }} ·
           <i class="bi bi-person-badge"></i> الموثّق: {{ survivor.documenter.username|default:"—" }}
         </div>
       </div>
       <div class="col-md-3 text-end">
-        <a href="{% url 'survivors:edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna mb-1">
-          <i class="bi bi-pencil"></i> تعديل البيانات الأساسية
-        </a><br>
+        <div class="btn-group btn-group-sm mb-1">
+          <a href="{% url 'survivors:edit' survivor.pk %}" class="btn btn-outline-haqquna">
+            <i class="bi bi-pencil"></i> تعديل
+          </a>
+          <a href="{% url 'survivors:print' survivor.pk %}" class="btn btn-outline-secondary" target="_blank">
+            <i class="bi bi-printer"></i> طباعة/PDF
+          </a>
+        </div>
+        <br>
         <small class="text-muted">
-          درجة الملف الإجمالية:
+          الدرجة الإجمالية:
           <strong class="text-haqquna">{{ survivor.overall_score }}/5</strong>
+          (تُحسب آلياً)
         </small>
       </div>
     </div>
@@ -46,9 +52,11 @@
   <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#overview">نظرة عامة</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#consent">الموافقة</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#detention">الاحتجاز</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#interviews">المقابلات والفيديوهات ({{ interviews.count }})</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#witnesses">الشهود ({{ witnesses.count }})</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#documents">الوثائق ({{ documents.count }})</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#medical">الطبي/النفسي</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#notes">الملاحظات ({{ notes.count }})</a></li>
   <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#social">المسح الاجتماعي</a></li>
 </ul>
 
@@ -67,10 +75,13 @@
             <dt class="col-5">الكنية/اللقب</dt><dd class="col-7">{{ survivor.alias|default:"—" }}</dd>
             <dt class="col-5">الرقم الوطني</dt><dd class="col-7">{{ survivor.national_id|default:"—" }}</dd>
             <dt class="col-5">تاريخ الميلاد</dt><dd class="col-7">{{ survivor.birth_date|date:"Y-m-d"|default:"—" }}{% if survivor.birth_date_approximate %} <small class="text-muted">(تقريبي)</small>{% endif %}</dd>
-            <dt class="col-5">مكان الولادة</dt><dd class="col-7">{{ survivor.birth_place|default:"—" }}</dd>
+            <dt class="col-5">محافظة الولادة</dt><dd class="col-7">{{ survivor.get_birth_governorate_display|default:"—" }}</dd>
+            <dt class="col-5">مكان الولادة</dt><dd class="col-7">{{ survivor.birth_place_detail|default:"—" }}</dd>
             <dt class="col-5">الجنسية</dt><dd class="col-7">{{ survivor.nationality }}</dd>
-            <dt class="col-5">الحالة الزوجية وقت الاعتقال</dt><dd class="col-7">{{ survivor.marital_status_at_detention|default:"—" }}</dd>
+            <dt class="col-5">الحالة الزوجية وقت الاعتقال</dt><dd class="col-7">{{ survivor.get_marital_status_at_detention_display|default:"—" }}</dd>
             <dt class="col-5">العمر وقت الاعتقال</dt><dd class="col-7">{{ survivor.age_at_detention|default:"—" }}</dd>
+            <dt class="col-5">المهنة وقت الاعتقال</dt><dd class="col-7">{{ survivor.get_occupation_category_display|default:"—" }}{% if survivor.occupation_detail %} ({{ survivor.occupation_detail }}){% endif %}</dd>
+            <dt class="col-5">النشاط السياسي</dt><dd class="col-7">{{ survivor.get_political_activity_category_display|default:"—" }}</dd>
           </dl>
         </div>
       </div>
@@ -82,7 +93,8 @@
           <dl class="row mb-0">
             <dt class="col-5">الهاتف</dt><dd class="col-7">{{ survivor.current_phone|default:"—" }}</dd>
             <dt class="col-5">البريد</dt><dd class="col-7">{{ survivor.current_email|default:"—" }}</dd>
-            <dt class="col-5">بلد الإقامة</dt><dd class="col-7">{{ survivor.current_country|default:"—" }}</dd>
+            <dt class="col-5">بلد الإقامة</dt><dd class="col-7">{{ survivor.get_current_country_display|default:"—" }}</dd>
+            <dt class="col-5">المحافظة الحالية</dt><dd class="col-7">{{ survivor.get_current_governorate_display|default:"—" }}</dd>
             <dt class="col-5">المدينة</dt><dd class="col-7">{{ survivor.current_city|default:"—" }}</dd>
             <dt class="col-5">قريب للتواصل</dt><dd class="col-7">{{ survivor.next_of_kin_name|default:"—" }} ({{ survivor.next_of_kin_relation|default:"—" }})</dd>
             <dt class="col-5">هاتف القريب</dt><dd class="col-7">{{ survivor.next_of_kin_phone|default:"—" }}</dd>
@@ -90,14 +102,14 @@
         </div>
       </div>
       <div class="card mb-3">
-        <div class="card-header">المقابلة والتوثيق</div>
+        <div class="card-header">إحصائيات الملف</div>
         <div class="card-body">
           <dl class="row mb-0">
-            <dt class="col-5">تاريخ المقابلة</dt><dd class="col-7">{{ survivor.interview_date|date:"Y-m-d"|default:"—" }}</dd>
-            <dt class="col-5">مكان المقابلة</dt><dd class="col-7">{{ survivor.interview_location|default:"—" }}</dd>
-            <dt class="col-5">لغة المقابلة</dt><dd class="col-7">{{ survivor.interview_language }}</dd>
-            <dt class="col-5">مسجَّلة؟</dt><dd class="col-7">{% if survivor.interview_recorded %}<span class="badge bg-success">نعم</span>{% else %}<span class="badge bg-secondary">لا</span>{% endif %}</dd>
-            <dt class="col-5">أول مقابلة؟</dt><dd class="col-7">{% if survivor.is_first_interview %}نعم{% else %}<span class="text-warning">لا</span>{% endif %}</dd>
+            <dt class="col-7">عدد المقابلات</dt><dd class="col-5">{{ survivor.total_interviews }}</dd>
+            <dt class="col-7">عدد الشهود</dt><dd class="col-5">{{ survivor.total_witnesses }}</dd>
+            <dt class="col-7">شهود مستقلون</dt><dd class="col-5">{{ survivor.independent_witnesses_count }}</dd>
+            <dt class="col-7">عدد الوثائق</dt><dd class="col-5">{{ survivor.total_documents }}</dd>
+            <dt class="col-7">عدد الفيديوهات/التسجيلات</dt><dd class="col-5">{{ survivor.total_videos }}</dd>
           </dl>
         </div>
       </div>
@@ -379,6 +391,83 @@
         {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- المقابلات والفيديوهات -->
+<div class="tab-pane fade" id="interviews">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between">
+      <span><i class="bi bi-camera-video"></i> المقابلات والفيديوهات</span>
+      <a href="{% url 'survivors:interview_add' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+        <i class="bi bi-plus"></i> مقابلة جديدة
+      </a>
+    </div>
+    <div class="card-body">
+      {% for i in interviews %}
+      <div class="timeline-item">
+        <div class="d-flex justify-content-between">
+          <div>
+            <strong>المقابلة #{{ i.sequence_number }}</strong>
+            {% if i.is_first %}<span class="badge bg-success">الأولى</span>{% endif %}
+            <small class="text-muted">{{ i.interview_date|date:"Y-m-d" }} · {{ i.get_location_type_display }} · {{ i.get_language_display }}</small>
+          </div>
+          <div>
+            <a href="{% url 'survivors:interview_detail' i.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i> تفاصيل
+            </a>
+            <a href="{% url 'survivors:media_add' i.pk %}" class="btn btn-sm btn-outline-haqquna">
+              <i class="bi bi-cloud-upload"></i> رفع فيديو/ملف
+            </a>
+          </div>
+        </div>
+        <div class="mt-1 small">
+          <span class="badge bg-secondary">{{ i.get_methodology_display }}</span>
+          {% if i.recorded %}<span class="badge bg-info">مسجَّلة</span>{% endif %}
+          {% if i.duration_minutes %}<span class="badge bg-light text-dark">{{ i.duration_minutes }} دقيقة</span>{% endif %}
+          <span class="badge bg-warning text-dark"><i class="bi bi-file-earmark-play"></i> {{ i.media_count }} ملف</span>
+          {% if i.interviewer %}<small class="text-muted">المحاوِر: {{ i.interviewer.username }}</small>{% endif %}
+        </div>
+        {% if i.summary %}<div class="mt-2 small text-muted">{{ i.summary|truncatechars:300 }}</div>{% endif %}
+      </div>
+      {% empty %}
+      <p class="text-muted text-center mb-0">لم تُسجَّل مقابلات بعد</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- الملاحظات -->
+<div class="tab-pane fade" id="notes">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between">
+      <span><i class="bi bi-sticky"></i> الملاحظات والمتابعة</span>
+      <a href="{% url 'survivors:note_add' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+        <i class="bi bi-plus"></i> ملاحظة جديدة
+      </a>
+    </div>
+    <div class="card-body">
+      {% for n in notes %}
+      <div class="timeline-item {% if n.is_pinned %}border-warning{% endif %}">
+        <div class="d-flex justify-content-between">
+          <div>
+            {% if n.is_pinned %}<i class="bi bi-pin-fill text-warning"></i>{% endif %}
+            {% if n.is_confidential %}<i class="bi bi-shield-lock-fill text-danger"></i>{% endif %}
+            <span class="badge bg-secondary">{{ n.get_note_type_display }}</span>
+            {% if n.title %}<strong>{{ n.title }}</strong>{% endif %}
+          </div>
+          <div>
+            <small class="text-muted">{{ n.author.username|default:"—" }} · {{ n.created_at|date:"Y-m-d H:i" }}</small>
+            <a href="{% url 'survivors:note_edit' n.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'survivors:note_delete' n.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+          </div>
+        </div>
+        <div class="mt-2" style="white-space: pre-wrap;">{{ n.content }}</div>
+      </div>
+      {% empty %}
+      <p class="text-muted text-center mb-0">لا توجد ملاحظات بعد. أضف ملاحظات لمتابعة الملف وتسجيل أي ملاحظات جديدة.</p>
+      {% endfor %}
     </div>
   </div>
 </div>

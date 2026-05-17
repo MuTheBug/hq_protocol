@@ -16,6 +16,11 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from .choices import (
+    Country, InterviewLanguage, MaritalStatus, OccupationCategory,
+    PoliticalActivity, SyrianGovernorate,
+)
+
 
 # ============================================================
 # ١. القوائم المرجعية (Lookup tables)
@@ -92,14 +97,7 @@ class TortureMethod(models.Model):
 # ============================================================
 
 class SurvivorProfile(models.Model):
-    """ملف ناجٍ كامل - يطابق الحد الأدنى لمعلومات IIIM."""
-
-    class Status(models.TextChoices):
-        ALIVE_RELEASED = "alive_released", _("ناجٍ مُفرج عنه")
-        STILL_DETAINED = "still_detained", _("لا يزال محتجزاً")
-        MISSING = "missing", _("مفقود/مغيّب قسرياً")
-        DECEASED_CUSTODY = "deceased_custody", _("توفي في الاحتجاز")
-        DECEASED_AFTER = "deceased_after", _("توفي بعد الإفراج")
+    """ملف ناجٍ مُفرج عنه. النظام مخصص للناجين فقط (لا مفقودين ولا متوفين)."""
 
     class Gender(models.TextChoices):
         MALE = "male", _("ذكر")
@@ -139,30 +137,57 @@ class SurvivorProfile(models.Model):
     birth_date_approximate = models.BooleanField(
         _("تاريخ الميلاد تقريبي"), default=False,
     )
-    birth_place = models.CharField(_("مكان الولادة"), max_length=200, blank=True)
-    gender = models.CharField(_("الجنس"), max_length=10, choices=Gender.choices)
+    birth_governorate = models.CharField(
+        _("محافظة الولادة"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
+    )
+    birth_place_detail = models.CharField(
+        _("مكان الولادة - تفصيلي (مدينة، قرية، حي)"), max_length=200, blank=True,
+    )
+    gender = models.CharField(
+        _("الجنس"), max_length=10, choices=Gender.choices, db_index=True,
+    )
     nationality = models.CharField(_("الجنسية"), max_length=100, default="سورية")
     marital_status_at_detention = models.CharField(
-        _("الحالة الزوجية وقت الاعتقال"), max_length=50, blank=True,
+        _("الحالة الزوجية وقت الاعتقال"), max_length=20,
+        choices=MaritalStatus.CHOICES, blank=True, db_index=True,
     )
 
     # ---- وقت الاعتقال ----
     address_at_detention = models.TextField(_("عنوان السكن وقت الاعتقال"), blank=True)
     governorate_at_detention = models.CharField(
-        _("المحافظة وقت الاعتقال"), max_length=100, blank=True,
+        _("المحافظة وقت الاعتقال"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
     )
-    occupation_at_detention = models.CharField(
-        _("العمل/الدراسة وقت الاعتقال"), max_length=200, blank=True,
+    occupation_category = models.CharField(
+        _("فئة العمل/الدراسة وقت الاعتقال"), max_length=30,
+        choices=OccupationCategory.CHOICES, blank=True, db_index=True,
     )
-    political_affiliation = models.TextField(
-        _("الانتماء/النشاط السياسي (إن وُجد)"), blank=True,
+    occupation_detail = models.CharField(
+        _("تفاصيل العمل (اختياري)"), max_length=200, blank=True,
+    )
+    political_activity_category = models.CharField(
+        _("فئة النشاط/الانتماء السياسي"), max_length=30,
+        choices=PoliticalActivity.CHOICES, blank=True, db_index=True,
+    )
+    political_activity_detail = models.TextField(
+        _("تفاصيل النشاط السياسي (اختياري)"), blank=True,
     )
 
     # ---- معلومات اتصال حالية ----
     current_phone = models.CharField(_("رقم الهاتف الحالي"), max_length=30, blank=True)
     current_email = models.EmailField(_("البريد الإلكتروني الحالي"), blank=True)
-    current_country = models.CharField(_("بلد الإقامة الحالي"), max_length=100, blank=True)
-    current_city = models.CharField(_("المدينة الحالية"), max_length=100, blank=True)
+    current_country = models.CharField(
+        _("بلد الإقامة الحالي"), max_length=10,
+        choices=Country.CHOICES, blank=True, db_index=True,
+    )
+    current_governorate = models.CharField(
+        _("المحافظة الحالية (داخل سوريا)"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
+    )
+    current_city = models.CharField(
+        _("المدينة/البلدة الحالية"), max_length=100, blank=True,
+    )
     next_of_kin_name = models.CharField(_("اسم قريب للتواصل"), max_length=200, blank=True)
     next_of_kin_relation = models.CharField(_("صلة القرابة"), max_length=80, blank=True)
     next_of_kin_phone = models.CharField(_("رقم القريب"), max_length=30, blank=True)
@@ -176,55 +201,26 @@ class SurvivorProfile(models.Model):
         upload_to="survivors/photos/before/", blank=True, null=True,
     )
 
-    # ---- الحالة العامة ----
-    status = models.CharField(
-        _("الحالة الراهنة"), max_length=30, choices=Status.choices,
-        default=Status.ALIVE_RELEASED,
-    )
-    death_date = models.DateField(_("تاريخ الوفاة (إن وُجد)"), null=True, blank=True)
-    death_circumstances = models.TextField(_("ظروف الوفاة"), blank=True)
-
     # ---- التصنيف الداخلي ----
     file_classification = models.CharField(
         _("تصنيف الملف"), max_length=10, choices=FileClassification.choices,
-        default=FileClassification.DRAFT,
+        default=FileClassification.DRAFT, db_index=True,
     )
+    # النقاط تُحسَب تلقائياً من البيانات والأدلة (signals)
     reliability_score = models.PositiveSmallIntegerField(
-        _("درجة الموثوقية (1-5)"), default=0,
-        help_text=_("اتساق الرواية الداخلي وتماسك الناجي"),
+        _("درجة الموثوقية (0-5) - محسوبة آلياً"), default=0, editable=False,
     )
     corroboration_score = models.PositiveSmallIntegerField(
-        _("درجة التحقق المتقاطع (1-5)"), default=0,
-        help_text=_("عدد وأنواع الأدلة المؤيِّدة (شهود، وثائق، أدلة طبية...)"),
+        _("درجة التحقق المتقاطع (0-5) - محسوبة آلياً"), default=0, editable=False,
     )
     completeness_score = models.PositiveSmallIntegerField(
-        _("درجة الاكتمال (1-5)"), default=0,
+        _("درجة الاكتمال (0-5) - محسوبة آلياً"), default=0, editable=False,
     )
 
     # ---- بيانات وصفية ----
     documenter = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name="documented_survivors", verbose_name=_("الموثّق المسؤول"),
-    )
-    interview_date = models.DateField(_("تاريخ المقابلة"), null=True, blank=True)
-    interview_location = models.CharField(
-        _("مكان المقابلة"), max_length=200, blank=True,
-    )
-    interview_language = models.CharField(
-        _("لغة المقابلة"), max_length=50, default="العربية",
-    )
-    interview_recorded = models.BooleanField(
-        _("هل تم تسجيل المقابلة (صوت/فيديو)؟"), default=False,
-    )
-    interview_recording_consent = models.BooleanField(
-        _("موافقة على التسجيل"), default=False,
-    )
-    is_first_interview = models.BooleanField(
-        _("هل هذه أول مقابلة للناجي؟"), default=True,
-        help_text=_("الـIIIM تتجنب إعادة مقابلة الناجين لتجنب إعادة الصدمة"),
-    )
-    previous_interviews_with = models.TextField(
-        _("مقابلات سابقة أُجريت معه (المنظمات والتواريخ)"), blank=True,
     )
 
     # ---- الإحالة الطبية والنفسية ----
@@ -239,7 +235,7 @@ class SurvivorProfile(models.Model):
     )
     referral_notes = models.TextField(_("تفاصيل الإحالات"), blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -278,8 +274,29 @@ class SurvivorProfile(models.Model):
         return self.witnesses.count()
 
     @property
+    def independent_witnesses_count(self):
+        return self.witnesses.filter(
+            is_independent=True, consent_to_use_testimony=True,
+        ).count()
+
+    @property
     def total_documents(self):
         return self.documents.count()
+
+    @property
+    def total_interviews(self):
+        return self.interviews.count()
+
+    @property
+    def total_videos(self):
+        from django.db.models import Q
+        return (
+            self.documents.filter(document_type__in=["video", "audio"]).count()
+            + InterviewMedia.objects.filter(
+                interview__survivor=self,
+                media_type__in=["video", "audio"],
+            ).count()
+        )
 
     @property
     def overall_score(self):
@@ -287,6 +304,79 @@ class SurvivorProfile(models.Model):
         if not any(scores):
             return 0
         return round(sum(scores) / 3, 1)
+
+    # ---- منهج النقاط التلقائية ----
+    def compute_reliability(self):
+        """الموثوقية (0-5): اتساق وتفصيل وتوثيق المقابلة."""
+        score = 0
+        periods = self.detention_periods.all()
+        if periods.exists():
+            score += 1
+            if any(len(p.torture_description or "") > 200 for p in periods):
+                score += 1
+        events = self.detention_events.all()
+        if events.exists() and any(len(e.circumstances or "") > 150 for e in events):
+            score += 1
+        # إجراء أول مقابلة (تجنّب إعادة الصدمة) أو مقابلة مسجَّلة
+        interviews = self.interviews.all()
+        if interviews.filter(is_first=True).exists():
+            score += 1
+        if interviews.filter(recorded=True).exists():
+            score += 1
+        return min(score, 5)
+
+    def compute_corroboration(self):
+        """التحقق المتقاطع (0-5): شهود مستقلون + وثائق + أدلة طبية."""
+        score = 0
+        independent = self.witnesses.filter(
+            is_independent=True, consent_to_use_testimony=True,
+        ).count()
+        score += min(independent, 2)
+        if self.documents.filter(
+            document_type__in=[
+                "official_regime", "court_document", "arrest_warrant",
+                "release_order", "transfer_order", "international_court",
+            ]
+        ).exists():
+            score += 1
+        if self.medical_assessments.filter(istanbul_protocol_compliant=True).exists():
+            score += 1
+        if self.documents.exclude(file_hash_sha256="").exists():
+            score += 1
+        return min(score, 5)
+
+    def compute_completeness(self):
+        """الاكتمال (0-5): أقسام الملف الأساسية مغطّاة."""
+        score = 0
+        if self.first_name and self.father_name and self.family_name and self.gender:
+            score += 1
+        try:
+            if self.consent.is_fully_compliant:
+                score += 1
+        except Exception:
+            pass
+        if self.detention_events.exists():
+            score += 1
+        if self.detention_periods.exists():
+            score += 1
+        if hasattr(self, "release_event"):
+            score += 1
+        return min(score, 5)
+
+    def recompute_scores(self, save=True):
+        """يحدّث الدرجات الثلاث (يُستدعى من signals تلقائياً)."""
+        rel = self.compute_reliability()
+        cor = self.compute_corroboration()
+        com = self.compute_completeness()
+        if save:
+            type(self).objects.filter(pk=self.pk).update(
+                reliability_score=rel,
+                corroboration_score=cor,
+                completeness_score=com,
+            )
+        self.reliability_score = rel
+        self.corroboration_score = cor
+        self.completeness_score = com
 
 
 # ============================================================
@@ -841,3 +931,210 @@ class LongTermImpact(models.Model):
 
     def __str__(self):
         return f"الأثر طويل الأمد - {self.survivor.case_reference}"
+
+
+# ============================================================
+# ٨. الملاحظات المتعددة (Notes) - متابعة كل ناجٍ
+# ============================================================
+
+class SurvivorNote(models.Model):
+    """ملاحظات متعددة على ملف الناجي (تتبع، متابعة، تحديثات...)."""
+
+    class NoteType(models.TextChoices):
+        GENERAL = "general", _("ملاحظة عامة")
+        FOLLOW_UP = "follow_up", _("متابعة")
+        REFERRAL = "referral", _("إحالة")
+        MEDICAL = "medical", _("طبية/نفسية")
+        LEGAL = "legal", _("قانونية")
+        SECURITY = "security", _("أمنية/حماية")
+        FAMILY = "family", _("متعلقة بالعائلة")
+        INCONSISTENCY = "inconsistency", _("ملاحظة على اتساق الرواية")
+        VERIFICATION = "verification", _("تحقق من معلومة")
+        OTHER = "other", _("أخرى")
+
+    survivor = models.ForeignKey(
+        SurvivorProfile, on_delete=models.CASCADE, related_name="notes",
+    )
+    note_type = models.CharField(
+        _("نوع الملاحظة"), max_length=20, choices=NoteType.choices,
+        default=NoteType.GENERAL, db_index=True,
+    )
+    title = models.CharField(_("عنوان مختصر"), max_length=200, blank=True)
+    content = models.TextField(_("الملاحظة"))
+    is_pinned = models.BooleanField(_("مثبّتة في أعلى الملف"), default=False)
+    is_confidential = models.BooleanField(
+        _("سرّية (للمشرفين فقط)"), default=False,
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="authored_notes", verbose_name=_("المُحرِّر"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("ملاحظة")
+        verbose_name_plural = _("الملاحظات")
+        ordering = ["-is_pinned", "-created_at"]
+
+    def __str__(self):
+        return f"{self.survivor.case_reference} - {self.title or self.get_note_type_display()}"
+
+
+# ============================================================
+# ٩. المقابلات المتعددة (Interviews) + الوسائط
+# ============================================================
+
+class Interview(models.Model):
+    """مقابلة مع الناجي - يدعم تعدد المقابلات لنفس الناجي."""
+
+    class Methodology(models.TextChoices):
+        ISTANBUL = "istanbul", _("بروتوكول إسطنبول")
+        SEMI_STRUCTURED = "semi_structured", _("شبه منظمة")
+        NARRATIVE = "narrative", _("سردية مفتوحة")
+        STRUCTURED = "structured", _("استمارة منظمة")
+        FOLLOW_UP = "follow_up", _("مقابلة متابعة")
+        OTHER = "other", _("أخرى")
+
+    class Location(models.TextChoices):
+        OFFICE = "office", _("في مكاتب الجمعية")
+        SURVIVOR_HOME = "survivor_home", _("في منزل الناجي")
+        REMOTE = "remote", _("عن بُعد (Zoom/Skype...)")
+        PHONE = "phone", _("هاتفية")
+        FIELD = "field", _("ميدانية أخرى")
+        OTHER = "other", _("أخرى")
+
+    survivor = models.ForeignKey(
+        SurvivorProfile, on_delete=models.CASCADE, related_name="interviews",
+    )
+    sequence_number = models.PositiveIntegerField(
+        _("رقم المقابلة"), default=1,
+        help_text=_("1 = المقابلة الأولى، 2 = الثانية..."),
+    )
+    is_first = models.BooleanField(_("هل هذه المقابلة الأولى للناجي؟"), default=True)
+    interview_date = models.DateField(_("تاريخ المقابلة"), db_index=True)
+    duration_minutes = models.PositiveIntegerField(
+        _("المدة بالدقائق"), null=True, blank=True,
+    )
+
+    location_type = models.CharField(
+        _("نوع المكان"), max_length=20, choices=Location.choices,
+        default=Location.OFFICE,
+    )
+    location_detail = models.CharField(
+        _("تفاصيل المكان"), max_length=300, blank=True,
+    )
+
+    interviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="conducted_interviews", verbose_name=_("المحاوِر"),
+    )
+    note_taker = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="note_taken_interviews", verbose_name=_("مدوِّن الملاحظات"),
+    )
+
+    language = models.CharField(
+        _("لغة المقابلة"), max_length=20,
+        choices=InterviewLanguage.CHOICES, default="ar_levantine",
+    )
+    methodology = models.CharField(
+        _("المنهجية المتّبعة"), max_length=20,
+        choices=Methodology.choices, default=Methodology.ISTANBUL,
+    )
+
+    recorded = models.BooleanField(_("مسجَّلة"), default=False)
+    consent_to_record = models.BooleanField(_("موافقة على التسجيل"), default=False)
+    consent_to_publish_recording = models.BooleanField(
+        _("موافقة على نشر التسجيل"), default=False,
+    )
+
+    summary = models.TextField(
+        _("ملخص المقابلة"), blank=True,
+        help_text=_("ملخص ما تم تناوله في هذه الجلسة تحديداً"),
+    )
+    gender_appropriate = models.BooleanField(
+        _("روعيت اعتبارات النوع الاجتماعي (محاوِرة لناجية مثلاً)"), default=False,
+    )
+    psychological_referral_after = models.BooleanField(
+        _("أُحيلت لدعم نفسي بعد المقابلة"), default=False,
+    )
+    notes = models.TextField(_("ملاحظات إضافية"), blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("مقابلة")
+        verbose_name_plural = _("المقابلات")
+        ordering = ["survivor", "sequence_number", "interview_date"]
+        unique_together = [("survivor", "sequence_number")]
+
+    def __str__(self):
+        return f"مقابلة #{self.sequence_number} - {self.survivor.case_reference} ({self.interview_date})"
+
+    @property
+    def media_count(self):
+        return self.media.count()
+
+
+def interview_media_path(instance, filename):
+    return f"survivors/interviews/{instance.interview.survivor.case_reference}/{filename}"
+
+
+class InterviewMedia(models.Model):
+    """وسائط متعددة لكل مقابلة (فيديوهات، صوتيات، نصوص، صور)."""
+
+    class MediaType(models.TextChoices):
+        VIDEO = "video", _("فيديو")
+        AUDIO = "audio", _("صوت")
+        TRANSCRIPT = "transcript", _("نص حرفي (Transcript)")
+        SUMMARY_DOC = "summary_doc", _("مستند ملخص")
+        PHOTO = "photo", _("صورة")
+        OTHER = "other", _("أخرى")
+
+    interview = models.ForeignKey(
+        Interview, on_delete=models.CASCADE, related_name="media",
+    )
+    media_type = models.CharField(
+        _("نوع الوسيط"), max_length=20, choices=MediaType.choices,
+    )
+    title = models.CharField(_("عنوان"), max_length=200)
+    file = models.FileField(_("الملف"), upload_to=interview_media_path)
+    file_hash_sha256 = models.CharField(
+        _("بصمة SHA-256"), max_length=64, blank=True,
+    )
+    file_size_bytes = models.BigIntegerField(_("حجم الملف"), null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(
+        _("المدة بالثواني (للفيديو/الصوت)"), null=True, blank=True,
+    )
+    part_number = models.PositiveIntegerField(
+        _("رقم الجزء (إن كانت المقابلة مقسّمة لأكثر من ملف)"), default=1,
+    )
+    description = models.TextField(_("وصف"), blank=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        verbose_name=_("رفعه"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("وسيط مقابلة")
+        verbose_name_plural = _("وسائط المقابلات")
+        ordering = ["interview", "part_number", "media_type"]
+
+    def __str__(self):
+        return f"{self.get_media_type_display()}: {self.title} ({self.interview})"
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.file_hash_sha256:
+            try:
+                self.file.seek(0)
+                hasher = hashlib.sha256()
+                for chunk in iter(lambda: self.file.read(4096), b""):
+                    hasher.update(chunk)
+                self.file_hash_sha256 = hasher.hexdigest()
+                self.file.seek(0)
+                self.file_size_bytes = self.file.size
+            except Exception:
+                pass
+        super().save(*args, **kwargs)

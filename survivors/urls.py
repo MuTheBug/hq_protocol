@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import exports, views
 
 app_name = "survivors"
 
@@ -9,6 +9,7 @@ urlpatterns = [
     path("new/", views.survivor_create, name="create"),
     path("<int:pk>/", views.survivor_detail, name="detail"),
     path("<int:pk>/edit/", views.survivor_edit, name="edit"),
+    path("<int:pk>/print/", exports.survivor_print, name="print"),
     path("<int:pk>/consent/", views.consent_edit, name="consent_edit"),
     path("<int:pk>/detention-event/add/",
          views.detention_event_add, name="detention_event_add"),
@@ -18,4 +19,21 @@ urlpatterns = [
     path("<int:pk>/witness/add/", views.witness_add, name="witness_add"),
     path("<int:pk>/document/add/", views.document_add, name="document_add"),
     path("<int:pk>/medical/add/", views.medical_add, name="medical_add"),
+    # ملاحظات
+    path("<int:pk>/note/add/", views.note_add, name="note_add"),
+    path("note/<int:pk>/edit/", views.note_edit, name="note_edit"),
+    path("note/<int:pk>/delete/", views.note_delete, name="note_delete"),
+    # مقابلات
+    path("<int:pk>/interview/add/", views.interview_add, name="interview_add"),
+    path("interview/<int:pk>/", views.interview_detail, name="interview_detail"),
+    path("interview/<int:pk>/edit/", views.interview_edit, name="interview_edit"),
+    path("interview/<int:interview_pk>/media/add/",
+         views.media_add, name="media_add"),
+    path("media/<int:pk>/delete/", views.media_delete, name="media_delete"),
+    # تصدير واستيراد
+    path("export/", exports.export_chooser, name="export_chooser"),
+    path("export/excel/", exports.export_excel, name="export_excel"),
+    path("export/pdf/", exports.export_pdf_print, name="export_pdf"),
+    path("export/json/", exports.export_json, name="export_json"),
+    path("import/json/", exports.import_json, name="import_json"),
 ]
