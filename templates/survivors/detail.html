@@ -33,14 +33,17 @@
             <i class="bi bi-pencil"></i> تعديل
           </a>
           <a href="{% url 'survivors:print' survivor.pk %}" class="btn btn-outline-secondary" target="_blank">
-            <i class="bi bi-printer"></i> طباعة/PDF
+            <i class="bi bi-printer"></i> طباعة
           </a>
         </div>
+        <br>
+        <a href="{% url 'survivors:transmit_chooser' survivor.pk %}" class="btn btn-sm btn-success mt-1">
+          <i class="bi bi-send"></i> إحالة لجهة خارجية
+        </a>
         <br>
         <small class="text-muted">
           الدرجة الإجمالية:
           <strong class="text-haqquna">{{ survivor.overall_score }}/5</strong>
-          (تُحسب آلياً)
         </small>
       </div>
     </div>
@@ -145,9 +148,12 @@
   </div>
 
   <div class="card mb-3">
-    <div class="card-header">التقييم الداخلي للملف</div>
+    <div class="card-header d-flex justify-content-between">
+      <span>التقييم الداخلي للملف (محسوب آلياً)</span>
+      <small class="text-muted">اضغط للتفاصيل ↓</small>
+    </div>
     <div class="card-body">
-      <div class="row text-center">
+      <div class="row text-center mb-2">
         <div class="col">
           <div class="stat-value">{{ survivor.reliability_score }}/5</div>
           <small>الموثوقية</small>
@@ -164,6 +170,53 @@
           <div class="stat-value text-success">{{ survivor.overall_score }}/5</div>
           <small>الإجمالي</small>
         </div>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="collapse" data-bs-target="#scoreBreakdown">
+        <i class="bi bi-info-circle"></i> ما الذي يرفع/يخفّض كل درجة؟
+      </button>
+      <div class="collapse mt-3" id="scoreBreakdown">
+
+        <h6 class="text-haqquna mt-2">الموثوقية (Reliability) - {{ survivor.reliability_score }}/5</h6>
+        <ul class="list-group list-group-flush mb-3">
+          {% for crit, earned, hint in breakdowns.reliability %}
+          <li class="list-group-item d-flex justify-content-between {% if earned %}list-group-item-success{% endif %}" style="padding: 6px 12px;">
+            <span>
+              {% if earned %}<i class="bi bi-check-circle-fill text-success"></i>
+              {% else %}<i class="bi bi-x-circle text-danger"></i>{% endif %}
+              {{ crit }}
+            </span>
+            {% if not earned %}<small class="text-muted">{{ hint }}</small>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+
+        <h6 class="text-haqquna">التحقق المتقاطع (Corroboration) - {{ survivor.corroboration_score }}/5</h6>
+        <ul class="list-group list-group-flush mb-3">
+          {% for crit, earned, hint in breakdowns.corroboration %}
+          <li class="list-group-item d-flex justify-content-between {% if earned %}list-group-item-success{% endif %}" style="padding: 6px 12px;">
+            <span>
+              {% if earned %}<i class="bi bi-check-circle-fill text-success"></i>
+              {% else %}<i class="bi bi-x-circle text-danger"></i>{% endif %}
+              {{ crit }}
+            </span>
+            {% if not earned %}<small class="text-muted">{{ hint }}</small>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+
+        <h6 class="text-haqquna">الاكتمال (Completeness) - {{ survivor.completeness_score }}/5</h6>
+        <ul class="list-group list-group-flush">
+          {% for crit, earned, hint in breakdowns.completeness %}
+          <li class="list-group-item d-flex justify-content-between {% if earned %}list-group-item-success{% endif %}" style="padding: 6px 12px;">
+            <span>
+              {% if earned %}<i class="bi bi-check-circle-fill text-success"></i>
+              {% else %}<i class="bi bi-x-circle text-danger"></i>{% endif %}
+              {{ crit }}
+            </span>
+            {% if not earned %}<small class="text-muted">{{ hint }}</small>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
       </div>
     </div>
   </div>

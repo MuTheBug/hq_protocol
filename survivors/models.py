@@ -378,6 +378,84 @@ class SurvivorProfile(models.Model):
         self.corroboration_score = cor
         self.completeness_score = com
 
+    # ---- شرح تفصيلي لكل درجة (لعرضه للمستخدم) ----
+    def reliability_breakdown(self):
+        """يُرجع قائمة (المعيار, مُكتسب؟, التلميح لتحسينه) - 5 معايير."""
+        periods = self.detention_periods.all()
+        has_periods = periods.exists()
+        has_long_torture = any(len(p.torture_description or "") > 200 for p in periods)
+        events = self.detention_events.all()
+        has_long_circ = events.exists() and any(
+            len(e.circumstances or "") > 150 for e in events
+        )
+        interviews = self.interviews.all()
+        has_first = interviews.filter(is_first=True).exists()
+        has_recorded = interviews.filter(recorded=True).exists()
+        return [
+            ("فترة احتجاز موثّقة", has_periods,
+             "أضف فترة احتجاز في تبويب «الاحتجاز» مع تحديد الفرع والفترة"),
+            ("وصف تعذيب مفصّل (>200 حرف)", has_long_torture,
+             "في فترة الاحتجاز، اكتب «وصف تفصيلي للتعذيب» بنص طويل (بأقوال الناجي)"),
+            ("ظروف اعتقال مفصّلة (>150 حرف)", has_long_circ,
+             "في «واقعة الاعتقال»، املأ حقل «ظروف الاعتقال بالتفصيل» (>150 حرف)"),
+            ("مقابلة أولى مسجَّلة كـ Interview", has_first,
+             "أضف مقابلة من تبويب «المقابلات» وعلّم خانة «المقابلة الأولى»"),
+            ("مقابلة بتسجيل صوت/فيديو", has_recorded,
+             "في المقابلة، فعّل «مسجَّلة» وارفع فيديو/صوت من زر «رفع ملف»"),
+        ]
+
+    def corroboration_breakdown(self):
+        independent = self.witnesses.filter(
+            is_independent=True, consent_to_use_testimony=True,
+        ).count()
+        return [
+            ("شاهد مستقل أول (موافقة موقّعة)", independent >= 1,
+             "أضف شاهداً من تبويب «الشهود»، علّم «مستقل» و«موافقة على استخدام شهادته»"),
+            ("شاهد مستقل ثانٍ", independent >= 2,
+             "أضف شاهداً ثانياً مستقلاً (شاهدان أفضل من واحد)"),
+            ("وثيقة رسمية (نظام/قضائية/دولية)", self.documents.filter(
+                document_type__in=[
+                    "official_regime", "court_document", "arrest_warrant",
+                    "release_order", "transfer_order", "international_court",
+                ]
+            ).exists(),
+             "ارفع وثيقة من «الوثائق»: نوعها رسمي (أمر اعتقال، أمر إفراج، إلخ)"),
+            ("تقييم طبي متوافق إسطنبول",
+             self.medical_assessments.filter(istanbul_protocol_compliant=True).exists(),
+             "أضف تقييماً طبياً من «الطبي/النفسي» وعلّم «متوافق مع بروتوكول إسطنبول»"),
+            ("وثيقة ببصمة SHA-256",
+             self.documents.exclude(file_hash_sha256="").exists(),
+             "ارفع أي وثيقة - البصمة تُحسب آلياً للسلامة"),
+        ]
+
+    def completeness_breakdown(self):
+        has_consent = False
+        try:
+            has_consent = self.consent.is_fully_compliant
+        except Exception:
+            pass
+        return [
+            ("بيانات هوية أساسية", bool(
+                self.first_name and self.father_name
+                and self.family_name and self.gender
+            ), "أكمل الاسم الرباعي والجنس في الملف الأساسي"),
+            ("موافقة مستنيرة مكتملة", has_consent,
+             "املأ «الموافقة المستنيرة» وعلّم: شُرح حق الانسحاب، شُرحت السرّية، شُرحت الاستخدامات"),
+            ("واقعة اعتقال", self.detention_events.exists(),
+             "أضف «واقعة اعتقال» (التاريخ، المكان، الجهة المعتقِلة)"),
+            ("فترة احتجاز", self.detention_periods.exists(),
+             "أضف فترة احتجاز واحدة على الأقل (في أي فرع)"),
+            ("بيانات الإفراج", hasattr(self, "release_event"),
+             "املأ «بيانات الإفراج» من تبويب الاحتجاز"),
+        ]
+
+    def all_breakdowns(self):
+        return {
+            "reliability": self.reliability_breakdown(),
+            "corroboration": self.corroboration_breakdown(),
+            "completeness": self.completeness_breakdown(),
+        }
+
 
 # ============================================================
 # ٣. الموافقة المستنيرة (Informed Consent) — طبقية

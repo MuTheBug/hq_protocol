@@ -409,3 +409,114 @@ def consent_print(request, pk):
         "consent": getattr(survivor, "consent", None),
         "today": datetime.now(),
     })
+
+
+# ============================================================
+# الإحالة لجهات خارجية (ICC, IIIM, محاكم الولاية القضائية العالمية...)
+# ============================================================
+
+from .recipients import RECIPIENTS, all_recipients_by_category, get_recipient
+
+
+def _check_consent_for_recipient(consent, recipient):
+    """يتحقق هل الموافقة الموقّعة تسمح بالمشاركة مع المستلم."""
+    req = recipient.get("requires_consent")
+    if not req:
+        return True, None
+    if not consent:
+        return False, "لا توجد موافقة مستنيرة موثّقة."
+    if not consent.consent_documented or consent.consent_withdrawn:
+        return False, "الموافقة المستنيرة غير مكتملة أو مسحوبة."
+    if not getattr(consent, req, False):
+        return False, f"الناجي لم يوافق صراحة على المشاركة مع هذه الجهة (حقل: {req})."
+    return True, None
+
+
+@login_required
+def transmit_chooser(request, pk):
+    """صفحة اختيار الجهة الخارجية وكتابة ملاحظات الإحالة."""
+    survivor = get_object_or_404(SurvivorProfile, pk=pk)
+    consent = getattr(survivor, "consent", None)
+
+    categorized = all_recipients_by_category()
+    # نُمرّر لكل مستلم حالة الموافقة (متاح/غير متاح)
+    for cat, recipients in categorized.items():
+        for r in recipients:
+            allowed, reason = _check_consent_for_recipient(consent, r)
+            r["allowed"] = allowed
+            r["reason"] = reason
+
+    return render(request, "survivors/transmit_chooser.html", {
+        "survivor": survivor, "consent": consent,
+        "categorized": categorized,
+    })
+
+
+@login_required
+def transmit_package(request, pk):
+    """يولّد حزمة الإحالة: خطاب رسمي + ملف الناجي - جاهز للطباعة كـPDF."""
+    survivor = get_object_or_404(SurvivorProfile, pk=pk)
+    recipient_code = request.GET.get("recipient")
+    recipient = get_recipient(recipient_code)
+    if not recipient:
+        messages.error(request, "الجهة المستلمة غير معروفة.")
+        return redirect("survivors:transmit_chooser", pk=pk)
+
+    consent = getattr(survivor, "consent", None)
+    allowed, reason = _check_consent_for_recipient(consent, recipient)
+    if not allowed:
+        messages.error(request, f"لا يمكن الإحالة: {reason}")
+        return redirect("survivors:transmit_chooser", pk=pk)
+
+    # ملاحظات اختيارية يكتبها المستخدم
+    transmission_note = request.GET.get("note", "").strip()
+    reference_number = (
+        f"HQ-TX-{survivor.case_reference}-{recipient_code.upper()}-{datetime.now():%Y%m%d}"
+    )
+
+    AuditLog.objects.create(
+        user=request.user, action=AuditLog.Action.EXPORT,
+        target_model="SurvivorProfile", target_id=str(survivor.pk),
+        target_repr=f"إحالة {survivor.case_reference} → {recipient['name_en']}",
+        path=request.path, ip_address=request.META.get("REMOTE_ADDR"),
+        notes=f"reference={reference_number}, recipient={recipient_code}, note={transmission_note}",
+    )
+
+    return render(request, "survivors/transmit_package.html", {
+        "survivor": survivor,
+        "consent": consent,
+        "release": getattr(survivor, "release_event", None),
+        "recipient": recipient,
+        "transmission_note": transmission_note,
+        "reference_number": reference_number,
+        "documenter": survivor.documenter,
+        "transmitted_by": request.user,
+        "detention_events": survivor.detention_events.all(),
+        "detention_periods": survivor.detention_periods.select_related("facility").all(),
+        "witnesses": survivor.witnesses.select_related("facility_witnessed_at").all(),
+        "documents": survivor.documents.all(),
+        "medical_assessments": survivor.medical_assessments.all(),
+        "interviews": survivor.interviews.all(),
+        "today": datetime.now(),
+    })
+
+
+# ============================================================
+# API لقوائم المدن والأحياء (لتغذية القوائم المتدرّجة)
+# ============================================================
+
+from django.http import JsonResponse
+from .syria_geo import cities_for, neighborhoods_for
+
+
+@login_required
+def api_cities(request):
+    gov = request.GET.get("gov", "")
+    return JsonResponse({"cities": cities_for(gov)})
+
+
+@login_required
+def api_neighborhoods(request):
+    gov = request.GET.get("gov", "")
+    city = request.GET.get("city", "")
+    return JsonResponse({"neighborhoods": neighborhoods_for(gov, city)})

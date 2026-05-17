@@ -1,0 +1,385 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>إحالة ملف {{ survivor.case_reference }} → {{ recipient.name_ar }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  body { font-family: 'Cairo', sans-serif; color: #222; line-height: 1.65;
+    font-size: 10.5pt; max-width: 210mm; margin: 0 auto; padding: 1cm; }
+  .toolbar { position: fixed; top: 10px; left: 10px; z-index: 999; }
+  .toolbar button { padding: 8px 16px; background: #1c6b85; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;
+    font-family: inherit; }
+  @media print { .toolbar { display: none; } body { padding: 0; } }
+
+  .cover { page-break-after: always; min-height: 100vh; }
+  .header { display:flex; justify-content:space-between; align-items:center;
+    border-bottom: 3px solid #1c6b85; padding-bottom: 12px; margin-bottom: 20px; }
+  .header img { height: 75px; }
+  h1 { color: #1c6b85; margin: 0; font-size: 1.4rem; }
+  h2 { color: #1c6b85; font-size: 1.1rem; border-bottom: 1px solid #4fbfd6;
+    padding-bottom: 4px; margin: 18px 0 10px 0; }
+  h3 { color: #0e3d4d; font-size: 0.95rem; margin: 12px 0 6px 0; }
+
+  .ref-box { background: #1c6b85; color: white; padding: 5px 12px;
+    border-radius: 4px; font-weight: 600; display: inline-block; }
+  .recipient-block { background: #f6f8fa; padding: 12px;
+    border-right: 4px solid #1c6b85; margin: 15px 0; }
+  .legal { text-align: justify; }
+  .signature-area { margin-top: 25px; padding: 15px;
+    border: 2px solid #1c6b85; border-radius: 8px; background: #fafdfe;
+    page-break-inside: avoid; }
+  .signature-row { display: flex; gap: 30px; margin: 12px 0; }
+  .signature-row > div { flex: 1; }
+  .sig-line { border-bottom: 1px solid #333; height: 35px; margin-top: 6px; }
+  .small-label { font-size: 0.85rem; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.85rem; }
+  th, td { padding: 5px 7px; border: 1px solid #ddd; text-align: right; }
+  th { background: #1c6b85; color: white; }
+  .badge { background: #4fbfd6; color: white; padding: 2px 8px;
+    border-radius: 4px; font-size: 0.75rem; }
+  .meta-row { margin: 4px 0; }
+  .meta-row strong { color: #1c6b85; min-width: 150px;
+    display: inline-block; }
+  .stamp-area { margin-top: 20px; text-align: center;
+    border: 2px dashed #999; padding: 30px; }
+  .confidential-banner { background: #dc3545; color: white;
+    text-align: center; padding: 8px; font-weight: 700;
+    margin-bottom: 15px; border-radius: 4px; }
+  .section { page-break-inside: avoid; }
+  .footer-note { margin-top: 20px; padding: 8px;
+    background: #fff3cd; border-right: 4px solid #ffc107;
+    font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+  <button onclick="window.close()">إغلاق</button>
+</div>
+
+<!-- ============ صفحة الغلاف (Cover Letter) ============ -->
+<div class="cover">
+
+<div class="confidential-banner">
+  CONFIDENTIAL · سرّي · للاستخدام الرسمي فقط
+</div>
+
+<div class="header">
+  <div>
+    <h1>جمعية حقّنا — HAQQUNA</h1>
+    <div class="small-label">جمعية اجتماعية ثقافية · Civil Society Organization</div>
+  </div>
+  <img src="{% static 'img/logo.jpg' %}" alt="حقّنا">
+</div>
+
+<div style="text-align:center;margin:20px 0;">
+  <span class="ref-box">رقم الإحالة: {{ reference_number }}</span>
+  &nbsp;
+  <span class="ref-box" style="background:#0e3d4d;">رقم الملف: {{ survivor.case_reference }}</span>
+</div>
+
+<h2 style="text-align:center;font-size:1.25rem;">خطاب إحالة ملف توثيق ناجٍ</h2>
+<p style="text-align:center;font-size:0.9rem;color:#666;">
+  Letter of Transmission · Survivor Documentation File
+</p>
+
+<div class="recipient-block">
+  <strong>إلى:</strong> {{ recipient.name_ar }}<br>
+  <span style="font-size:0.9rem;">{{ recipient.name_en }}</span><br>
+  {% if recipient.focal_point %}<span class="small-label">المرجع: {{ recipient.focal_point }}</span><br>{% endif %}
+  {% if recipient.address_ar %}<span class="small-label">العنوان: {{ recipient.address_ar }}</span><br>{% endif %}
+  {% if recipient.email %}<span class="small-label">البريد: {{ recipient.email }}</span>{% endif %}
+</div>
+
+<p><strong>التاريخ:</strong> {{ today|date:"Y-m-d" }}</p>
+
+<h3>الموضوع:</h3>
+<p class="legal">
+  إحالة ملف توثيق ناجٍ من الاعتقال السوري، رقم القضية
+  <strong>{{ survivor.case_reference }}</strong>،
+  لاستخدامه ضمن أنشطة جهتكم في إطار العدالة والمساءلة.
+</p>
+
+<h3>تحية طيبة وبعد،</h3>
+<p class="legal">
+  تتشرّف <strong>جمعية حقّنا</strong> — وهي جمعية مدنية سورية تعنى بتوثيق انتهاكات
+  حقوق الإنسان ودعم الناجين من الاعتقال — بأن تُحيل إليكم ملف الناجي/ة
+  <strong>{{ survivor.full_name }}</strong>،
+  المُوثَّق وفق المعايير الدولية المعتمدة، وتحديداً:
+</p>
+<ul style="font-size:0.9rem;">
+  <li>بروتوكول إسطنبول المحدّث (Istanbul Protocol, Rev. 2, 2022).</li>
+  <li>بروتوكول بيركلي للتحقيقات الرقمية مفتوحة المصدر (Berkeley Protocol, 2022).</li>
+  <li>منهجية الآلية الدولية المحايدة المستقلة لسوريا (IIIM Annex A, 2024).</li>
+  <li>دليل Eurojust/ICC للمنظمات المدنية (2022).</li>
+</ul>
+
+<h3>إقرار الموافقة المستنيرة:</h3>
+<p class="legal">
+  نُؤكّد أن الناجي/ة قد وقّع/ت على موافقة مستنيرة طبقية بتاريخ
+  <strong>{% if consent.consent_date %}{{ consent.consent_date|date:"Y-m-d" }}{% else %}—{% endif %}</strong>،
+  وفيها أذن صراحةً بمشاركة ملفه/ها مع <strong>{{ recipient.name_ar }}</strong>،
+  وقد تم شرح حدود السرّية وحقّه/ها بالانسحاب في أي وقت قبل توقيع الموافقة.
+</p>
+
+<h3>محتويات الحزمة:</h3>
+<ol style="font-size:0.9rem;">
+  <li>خطاب الإحالة (هذه الصفحة).</li>
+  <li>الملف الكامل للناجي/ة (الصفحات التالية).</li>
+  <li>سجل سلسلة الحيازة والبصمات الرقمية للوثائق الداعمة.</li>
+  <li>قائمة الشهود المتقاطعين (Cross-corroborating witnesses).</li>
+  <li>التقييمات الطبية وفق بروتوكول إسطنبول (إن وُجدت).</li>
+</ol>
+
+<h3>ملخص الملف:</h3>
+<table>
+<tr><th style="width:35%;">العنصر</th><th>القيمة</th></tr>
+<tr><td>الجنس</td><td>{{ survivor.get_gender_display }}</td></tr>
+<tr><td>محافظة الاعتقال</td><td>{{ survivor.get_governorate_at_detention_display|default:"—" }}</td></tr>
+<tr><td>عدد فترات الاحتجاز</td><td>{{ detention_periods.count }}</td></tr>
+<tr><td>عدد الشهود المتقاطعين</td><td>{{ survivor.witnesses.count }} (مستقلون: {{ survivor.independent_witnesses_count }})</td></tr>
+<tr><td>عدد الوثائق الداعمة</td><td>{{ documents.count }}</td></tr>
+<tr><td>تقييم طبي متوافق إسطنبول</td>
+  <td>{% if medical_assessments.exists %}نعم{% else %}لا{% endif %}</td></tr>
+<tr><td>درجة الموثوقية الداخلية</td>
+  <td><strong>{{ survivor.overall_score }}/5</strong> ({{ survivor.get_file_classification_display }})</td></tr>
+</table>
+
+{% if transmission_note %}
+<h3>ملاحظات إضافية من جمعية حقّنا:</h3>
+<div class="recipient-block" style="white-space:pre-wrap;">{{ transmission_note }}</div>
+{% endif %}
+
+<h3>التزامات جمعية حقّنا:</h3>
+<p class="legal">
+  نتعهّد بحفظ ملف الناجي بصيغته الأصلية في أرشيف الجمعية، وإبقاء سلسلة الحيازة موثَّقة بالكامل.
+  كما نتعهّد بإبلاغكم فوراً في حال سحب الناجي/ة لموافقته/ها على المشاركة، وذلك وفقاً
+  للمبادئ المعتمدة في دليل Eurojust/ICC للمنظمات المدنية.
+</p>
+
+<div class="signature-area">
+  <div class="signature-row">
+    <div>
+      <div class="small-label">الموثّق المسؤول عن الملف:</div>
+      <div class="sig-line"></div>
+      <div class="small-label" style="text-align:center;margin-top:4px;">
+        {% if documenter %}{{ documenter.full_name_ar|default:documenter.username }}{% else %}—{% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="small-label">المسؤول عن الإحالة:</div>
+      <div class="sig-line"></div>
+      <div class="small-label" style="text-align:center;margin-top:4px;">
+        {{ transmitted_by.full_name_ar|default:transmitted_by.username }}
+      </div>
+    </div>
+  </div>
+
+  <div class="signature-row">
+    <div>
+      <div class="small-label">التاريخ:</div>
+      <div class="sig-line"></div>
+      <div class="small-label" style="text-align:center;margin-top:4px;">
+        {{ today|date:"Y-m-d" }}
+      </div>
+    </div>
+    <div>
+      <div class="small-label">رئيس الجمعية / المدير التنفيذي:</div>
+      <div class="sig-line"></div>
+    </div>
+  </div>
+</div>
+
+<div class="stamp-area">
+  ختم جمعية حقّنا الرسمي
+</div>
+
+<div class="footer-note">
+  <strong>تنويه قانوني:</strong> هذه الوثيقة سرّية ومخصصة حصرياً للجهة المُرسَل إليها.
+  أي إفصاح غير مُصرّح به يخلّ بحقوق الناجي/ة وقد يعرّضه/ها لخطر. للاستفسارات،
+  راجعونا عبر القنوات الرسمية لجمعية حقّنا.
+</div>
+
+</div>
+
+<!-- ============ صفحات الملف الكامل ============ -->
+
+<div class="header">
+  <div><h1>الملف الكامل — {{ survivor.case_reference }}</h1></div>
+  <img src="{% static 'img/logo.jpg' %}" alt="حقّنا">
+</div>
+
+<div class="section">
+<h2>١. البيانات الشخصية</h2>
+<div class="meta-row"><strong>الاسم الكامل:</strong> {{ survivor.full_name }}</div>
+<div class="meta-row"><strong>اسم الأم:</strong> {{ survivor.mother_name|default:"—" }}</div>
+<div class="meta-row"><strong>الكنية:</strong> {{ survivor.alias|default:"—" }}</div>
+<div class="meta-row"><strong>الرقم الوطني:</strong> {{ survivor.national_id|default:"—" }}</div>
+<div class="meta-row"><strong>تاريخ الميلاد:</strong> {{ survivor.birth_date|date:"Y-m-d"|default:"—" }}{% if survivor.birth_date_approximate %} (تقريبي){% endif %}</div>
+<div class="meta-row"><strong>محافظة الولادة:</strong> {{ survivor.get_birth_governorate_display|default:"—" }}</div>
+<div class="meta-row"><strong>الجنس:</strong> {{ survivor.get_gender_display }}</div>
+<div class="meta-row"><strong>الحالة الزوجية وقت الاعتقال:</strong> {{ survivor.get_marital_status_at_detention_display|default:"—" }}</div>
+<div class="meta-row"><strong>المهنة وقت الاعتقال:</strong> {{ survivor.get_occupation_category_display|default:"—" }} {{ survivor.occupation_detail }}</div>
+<div class="meta-row"><strong>محافظة الاعتقال:</strong> {{ survivor.get_governorate_at_detention_display|default:"—" }}</div>
+<div class="meta-row"><strong>النشاط السياسي:</strong> {{ survivor.get_political_activity_category_display|default:"—" }}</div>
+{% if survivor.political_activity_detail %}<div class="meta-row"><strong>تفاصيل النشاط:</strong> {{ survivor.political_activity_detail }}</div>{% endif %}
+</div>
+
+<div class="section">
+<h2>٢. الموافقة المستنيرة المُسجَّلة</h2>
+{% if consent %}
+<div class="meta-row"><strong>تاريخ الموافقة:</strong> {{ consent.consent_date|date:"Y-m-d" }}</div>
+<div class="meta-row"><strong>الجهات المُجاز مشاركتها معها:</strong>
+  {% if consent.share_with_iiim %}<span class="badge">IIIM</span>{% endif %}
+  {% if consent.share_with_coi %}<span class="badge">CoI</span>{% endif %}
+  {% if consent.share_with_icc %}<span class="badge">ICC</span>{% endif %}
+  {% if consent.share_with_universal_jurisdiction %}<span class="badge">ولاية قضائية عالمية</span>{% endif %}
+  {% if consent.share_with_partner_orgs %}<span class="badge">منظمات شريكة</span>{% endif %}
+</div>
+<div class="meta-row"><strong>إخفاء الهوية:</strong>
+  {% if consent.anonymize_name %}الاسم {% endif %}
+  {% if consent.anonymize_photo %}الصورة {% endif %}
+  {% if consent.anonymize_location %}الموقع {% endif %}
+  {% if not consent.anonymize_name and not consent.anonymize_photo and not consent.anonymize_location %}لا يُطلب{% endif %}
+</div>
+{% else %}
+<p style="color:#dc3545;">⚠ لا توجد موافقة موثّقة - مراجعة الإحالة مطلوبة.</p>
+{% endif %}
+</div>
+
+<div class="section">
+<h2>٣. وقائع الاعتقال والاحتجاز</h2>
+<table>
+<thead><tr><th>التاريخ</th><th>المكان</th><th>الجهة المعتقِلة</th><th>السبب</th></tr></thead>
+<tbody>
+{% for e in detention_events %}
+<tr>
+  <td>{{ e.detention_date|date:"Y-m-d" }}</td>
+  <td>{{ e.detention_location }}</td>
+  <td>{{ e.arresting_entity }}</td>
+  <td>{{ e.reason_stated|default:"—" }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="4">—</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<h3>الخط الزمني للاحتجاز</h3>
+<table>
+<thead><tr><th>الفرع/السجن</th><th>من</th><th>إلى</th><th>المدة (يوم)</th><th>عنف جنسي؟</th></tr></thead>
+<tbody>
+{% for p in detention_periods %}
+<tr>
+  <td>{{ p.facility }}</td>
+  <td>{{ p.from_date|date:"Y-m-d" }}</td>
+  <td>{{ p.to_date|date:"Y-m-d"|default:"—" }}</td>
+  <td>{{ p.duration_days|default:"—" }}</td>
+  <td>{% if p.sexual_violence_reported %}نعم{% else %}لا{% endif %}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5">—</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+{% if release %}
+<div class="section">
+<h2>٤. الإفراج</h2>
+<div class="meta-row"><strong>التاريخ:</strong> {{ release.release_date|date:"Y-m-d" }}</div>
+<div class="meta-row"><strong>النوع:</strong> {{ release.get_release_type_display }}</div>
+<div class="meta-row"><strong>الظروف:</strong> {{ release.circumstances }}</div>
+</div>
+{% endif %}
+
+<div class="section">
+<h2>٥. الشهود المتقاطعون</h2>
+<table>
+<thead><tr><th>الاسم</th><th>الفرع</th><th>الفترة</th><th>مستقل</th><th>موافقة موقّعة</th></tr></thead>
+<tbody>
+{% for w in witnesses %}
+<tr>
+  <td>{{ w.witness_name }}</td>
+  <td>{{ w.facility_witnessed_at }}</td>
+  <td>{{ w.period_from|date:"Y-m" }} - {{ w.period_to|date:"Y-m"|default:"؟" }}</td>
+  <td>{% if w.is_independent %}نعم{% else %}لا{% endif %}</td>
+  <td>{% if w.declaration_signed %}نعم{% else %}لا{% endif %}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5">—</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>٦. الوثائق الداعمة وسلسلة الحيازة</h2>
+<table>
+<thead><tr><th>العنوان</th><th>النوع</th><th>تاريخ الاستلام</th><th>SHA-256 (أول 32 حرف)</th></tr></thead>
+<tbody>
+{% for d in documents %}
+<tr>
+  <td>{{ d.title }}</td>
+  <td>{{ d.get_document_type_display }}</td>
+  <td>{{ d.date_obtained|date:"Y-m-d" }}</td>
+  <td style="font-family:monospace;font-size:0.65rem;">{{ d.file_hash_sha256|slice:":32" }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="4">—</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>٧. التقييمات الطبية</h2>
+<table>
+<thead><tr><th>النوع</th><th>التاريخ</th><th>الفاحص</th><th>المنظمة</th><th>متوافق إسطنبول؟</th></tr></thead>
+<tbody>
+{% for m in medical_assessments %}
+<tr>
+  <td>{{ m.get_assessment_type_display }}</td>
+  <td>{{ m.assessment_date|date:"Y-m-d" }}</td>
+  <td>{{ m.assessor_name }}</td>
+  <td>{{ m.assessor_organization|default:"—" }}</td>
+  <td>{% if m.istanbul_protocol_compliant %}نعم{% else %}لا{% endif %}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5">—</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="section">
+<h2>٨. المقابلات المُسجَّلة</h2>
+<table>
+<thead><tr><th>#</th><th>التاريخ</th><th>المنهجية</th><th>مسجَّلة؟</th><th>عدد ملفات الوسائط</th></tr></thead>
+<tbody>
+{% for i in interviews %}
+<tr>
+  <td>{{ i.sequence_number }}</td>
+  <td>{{ i.interview_date|date:"Y-m-d" }}</td>
+  <td>{{ i.get_methodology_display }}</td>
+  <td>{% if i.recorded %}نعم{% else %}لا{% endif %}</td>
+  <td>{{ i.media_count }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5">—</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<div class="footer-note">
+نهاية الحزمة — جمعية حقّنا · رقم الإحالة {{ reference_number }} · تاريخ التوليد {{ today|date:"Y-m-d H:i" }}
+</div>
+
+</body>
+</html>

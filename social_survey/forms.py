@@ -51,6 +51,17 @@ class ChildForm(forms.ModelForm):
 
 
 class HousingInfoForm(forms.ModelForm):
+    """قوائم متدرّجة: محافظة → مدينة → حي. يتم التحقق دون قيد على choices لأن
+    المدن والأحياء تتولّد عبر JavaScript من ملف syria_geo."""
+
+    from survivors.choices import SyrianGovernorate
+    from survivors.syria_geo import SYRIA_CITIES
+
+    governorate = forms.ChoiceField(
+        label="المحافظة", required=False,
+        choices=[("", "—")] + SyrianGovernorate.CHOICES,
+    )
+
     class Meta:
         model = HousingInfo
         exclude = ("household",)
@@ -59,10 +70,47 @@ class HousingInfoForm(forms.ModelForm):
             "original_home_status": forms.Textarea(attrs={"rows": 2}),
             "confiscation_details": forms.Textarea(attrs={"rows": 2}),
             "notes": forms.Textarea(attrs={"rows": 2}),
+            "city": forms.Select(),
+            "neighborhood": forms.Select(),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # city و neighborhood يتم ملؤهما عبر JS، لذلك نسمح بأي قيمة
+        from survivors.syria_geo import SYRIA_CITIES
+        gov = self.data.get("governorate") if self.is_bound else (
+            self.initial.get("governorate") or (self.instance and self.instance.governorate)
+        )
+        city = self.data.get("city") if self.is_bound else (
+            self.initial.get("city") or (self.instance and self.instance.city)
+        )
+
+        # قوائم ابتدائية بسيطة (JS سيُحدّثها)
+        city_choices = [("", "—")]
+        if gov and gov in SYRIA_CITIES:
+            for city_name, _ngh in SYRIA_CITIES[gov]:
+                city_choices.append((city_name, city_name))
+        elif city:
+            city_choices.append((city, city))
+        self.fields["city"] = forms.ChoiceField(
+            label="المدينة/البلدة", required=False, choices=city_choices,
+        )
+
+        neighborhood_choices = [("", "—")]
+        if gov and city:
+            for city_name, neighborhoods in SYRIA_CITIES.get(gov, []):
+                if city_name == city:
+                    for n in neighborhoods:
+                        neighborhood_choices.append((n, n))
+                    break
+        elif self.instance and self.instance.neighborhood:
+            neighborhood_choices.append(
+                (self.instance.neighborhood, self.instance.neighborhood),
+            )
+        self.fields["neighborhood"] = forms.ChoiceField(
+            label="الحي", required=False, choices=neighborhood_choices,
+        )
+
         _bootstrapify(self)
 
 

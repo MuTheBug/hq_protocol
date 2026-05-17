@@ -40,4 +40,10 @@ urlpatterns = [
     path("export/pdf/", exports.export_pdf_print, name="export_pdf"),
     path("export/json/", exports.export_json, name="export_json"),
     path("import/json/", exports.import_json, name="import_json"),
+    # الإحالة لجهات خارجية
+    path("<int:pk>/transmit/", exports.transmit_chooser, name="transmit_chooser"),
+    path("<int:pk>/transmit/package/", exports.transmit_package, name="transmit_package"),
+    # API للقوائم المتدرّجة (المدن/الأحياء)
+    path("api/syria/cities/", exports.api_cities, name="api_cities"),
+    path("api/syria/neighborhoods/", exports.api_neighborhoods, name="api_neighborhoods"),
 ]

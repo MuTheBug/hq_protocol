@@ -222,6 +222,7 @@ def survivor_detail(request, pk):
         "medical_assessments": survivor.medical_assessments.all(),
         "notes": notes_qs,
         "interviews": survivor.interviews.prefetch_related("media").all(),
+        "breakdowns": survivor.all_breakdowns(),
     })
 
 

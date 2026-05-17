@@ -48,4 +48,54 @@
     {% endif %}
   </div>
 </form>
+
+{# سكربت القوائم المتدرّجة: محافظة → مدينة → حي (يعمل تلقائياً لو الحقول موجودة) #}
+<script>
+(function() {
+  const govEl = document.querySelector('[name="governorate"]');
+  const cityEl = document.querySelector('[name="city"]');
+  const nghEl = document.querySelector('[name="neighborhood"]');
+  if (!govEl || !cityEl) return;
+
+  function populateSelect(selectEl, items, current) {
+    selectEl.innerHTML = '<option value="">—</option>';
+    items.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item;
+      opt.textContent = item;
+      if (item === current) opt.selected = true;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  async function fetchCities(gov, currentCity) {
+    if (!gov) {
+      populateSelect(cityEl, [], '');
+      if (nghEl) populateSelect(nghEl, [], '');
+      return;
+    }
+    try {
+      const r = await fetch(`/survivors/api/syria/cities/?gov=${encodeURIComponent(gov)}`);
+      const data = await r.json();
+      populateSelect(cityEl, data.cities || [], currentCity);
+    } catch(e) { console.error(e); }
+  }
+
+  async function fetchNeighborhoods(gov, city, currentNgh) {
+    if (!nghEl) return;
+    if (!gov || !city) { populateSelect(nghEl, [], ''); return; }
+    try {
+      const r = await fetch(
+        `/survivors/api/syria/neighborhoods/?gov=${encodeURIComponent(gov)}&city=${encodeURIComponent(city)}`
+      );
+      const data = await r.json();
+      populateSelect(nghEl, data.neighborhoods || [], currentNgh);
+    } catch(e) { console.error(e); }
+  }
+
+  govEl.addEventListener('change', () => fetchCities(govEl.value, ''));
+  cityEl.addEventListener('change', () => fetchNeighborhoods(govEl.value, cityEl.value, ''));
+  // عند التحميل: لو القيم محفوظة سابقاً، حافظ عليها
+})();
+</script>
 {% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}إحالة ملف {{ survivor.case_reference }} لجهة خارجية{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="text-haqquna">
+      <i class="bi bi-send"></i> إحالة الملف لجهة خارجية
+    </h3>
+    <p class="text-muted mb-0">
+      الناجي: <strong>{{ survivor.case_reference }} - {{ survivor.full_name }}</strong>
+    </p>
+  </div>
+  <a href="{% url 'survivors:detail' survivor.pk %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-right"></i> رجوع للملف
+  </a>
+</div>
+
+{% if not consent or not consent.is_fully_compliant %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle"></i>
+  <strong>تنبيه:</strong> الموافقة المستنيرة غير مكتملة في هذا الملف.
+  لن تتمكّن من الإحالة لمعظم الجهات حتى تُكمل الموافقة.
+  <a href="{% url 'survivors:consent_edit' survivor.pk %}" class="btn btn-sm btn-warning">إكمال الموافقة</a>
+</div>
+{% endif %}
+
+<form method="get" action="{% url 'survivors:transmit_package' survivor.pk %}" class="card mb-3">
+  <div class="card-body">
+    <div class="mb-3">
+      <label class="form-label"><strong>ملاحظات الإحالة (اختياري)</strong></label>
+      <textarea name="note" rows="3" class="form-control"
+        placeholder="أي معلومات إضافية تريد إدراجها في خطاب الإحالة..."></textarea>
+    </div>
+
+    {% for category, recipients in categorized.items %}
+    <h5 class="form-section-title">{{ category }}</h5>
+    <div class="row mb-3">
+      {% for r in recipients %}
+      <div class="col-md-6 mb-2">
+        <div class="card {% if not r.allowed %}border-secondary opacity-75{% else %}border-haqquna{% endif %}">
+          <div class="card-body p-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <div><strong>{{ r.name_ar }}</strong></div>
+                <div class="small text-muted">{{ r.name_en }}</div>
+                {% if r.address_ar %}<div class="small"><i class="bi bi-geo-alt"></i> {{ r.address_ar }}</div>{% endif %}
+                {% if r.notes %}<div class="small text-muted mt-1">{{ r.notes }}</div>{% endif %}
+                {% if not r.allowed %}
+                <div class="small text-danger mt-1">
+                  <i class="bi bi-x-circle"></i> {{ r.reason }}
+                </div>
+                {% endif %}
+              </div>
+              <div class="ms-2">
+                {% if r.allowed %}
+                <button type="submit" name="recipient" value="{{ r.code }}"
+                        class="btn btn-sm btn-haqquna">
+                  <i class="bi bi-send"></i> إحالة
+                </button>
+                {% else %}
+                <button class="btn btn-sm btn-secondary" disabled>
+                  <i class="bi bi-lock"></i> محظور
+                </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</form>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i>
+  <strong>كيف يعمل النظام:</strong>
+  بعد اختيار الجهة، يولّد النظام <strong>حزمة إحالة</strong> تحتوي على
+  خطاب رسمي + ملف الناجي الكامل + سلسلة الحيازة، جاهزة للطباعة كـPDF أو إرسالها رقمياً.
+  كل إحالة تُسجَّل في سجل التدقيق.
+</div>
+{% endblock %}
