@@ -69,14 +69,21 @@ pip install -r requirements.txt
 ### التثبيت الأولي
 ```bash
 python manage.py migrate
+python manage.py create_admin              # ينشئ admin / haqquna2026
 python manage.py seed_reference_data       # يحمّل مراكز الاحتجاز وأنماط التعذيب
-python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### الحساب التجريبي
+### الحساب الأولي
 - المستخدم: `admin`
 - كلمة المرور: `haqquna2026`
+- **بدّل كلمة المرور فور تسجيل الدخول الأول** من `/accounts/profile/`
+
+> لإعادة ضبط كلمة المرور لاحقاً:
+> `python manage.py create_admin --password كلمة_جديدة`
+>
+> أو لإنشاء حساب آخر:
+> `python manage.py create_admin --username NAME --password PWD --full-name "اسم كامل"`
 
 ---
 
