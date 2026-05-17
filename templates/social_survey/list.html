@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}المسوحات الاجتماعية{% endblock %}
+
+{% block content %}
+<h3 class="text-haqquna mb-3">
+  <i class="bi bi-house-heart"></i> المسوحات الاجتماعية <small class="text-muted">({{ total }})</small>
+</h3>
+
+<div class="card">
+<table class="table table-haqquna table-hover mb-0">
+  <thead>
+    <tr>
+      <th>الناجي</th>
+      <th>تاريخ المسح</th>
+      <th>الحالة الزوجية</th>
+      <th>عدد الأبناء</th>
+      <th>التهجير</th>
+      <th>الباحث</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in surveys %}
+    <tr>
+      <td>
+        <a href="{% url 'social_survey:household_detail' s.pk %}">
+          {{ s.survivor.case_reference }} - {{ s.survivor.full_name }}
+        </a>
+      </td>
+      <td><small>{{ s.survey_date|date:"Y-m-d" }}</small></td>
+      <td><small>{{ s.get_marital_status_display }}</small></td>
+      <td>{{ s.children_count }}</td>
+      <td><small>{{ s.get_displacement_status_display }}</small></td>
+      <td><small>{{ s.surveyor.username|default:"—" }}</small></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-center p-4 text-muted">لا توجد مسوحات بعد</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

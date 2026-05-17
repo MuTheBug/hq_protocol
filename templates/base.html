@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ ORG_NAME_AR }} - {{ SYSTEM_NAME }}{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/jpeg" href="{% static 'img/logo.jpg' %}">
+<style>
+  :root {
+    --haqquna-primary: #1c6b85;
+    --haqquna-accent: #4fbfd6;
+    --haqquna-dark: #0e3d4d;
+  }
+  body { font-family: 'Cairo', sans-serif; background: #f6f8fa; color: #222; }
+  .navbar-haqquna {
+    background: linear-gradient(135deg, var(--haqquna-dark), var(--haqquna-primary));
+  }
+  .navbar-haqquna .navbar-brand, .navbar-haqquna .nav-link {
+    color: #fff !important;
+  }
+  .navbar-haqquna .nav-link:hover { color: var(--haqquna-accent) !important; }
+  .navbar-brand img { height: 42px; margin-left: 10px; background: #fff;
+    padding: 3px; border-radius: 6px; }
+  .btn-haqquna { background: var(--haqquna-primary); color: #fff; border: none; }
+  .btn-haqquna:hover { background: var(--haqquna-dark); color: #fff; }
+  .card { border-radius: 10px; border: 1px solid #e3e8ee; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .card-header { background: #f1f5f8; font-weight: 600; border-radius: 10px 10px 0 0 !important; }
+  .text-haqquna { color: var(--haqquna-primary); }
+  .bg-haqquna { background: var(--haqquna-primary) !important; }
+  .badge-a { background: #198754; color: #fff; }
+  .badge-b { background: #0d6efd; color: #fff; }
+  .badge-c { background: #6c757d; color: #fff; }
+  .badge-draft { background: #fd7e14; color: #fff; }
+  .stat-card { transition: transform 0.15s; }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-value { font-size: 2.2rem; font-weight: 700; color: var(--haqquna-primary); }
+  .stat-label { color: #6c757d; font-size: 0.9rem; }
+  .footer-haqquna {
+    background: var(--haqquna-dark); color: #cfe6ec; padding: 1.5rem 0;
+    margin-top: 3rem; text-align: center; font-size: 0.85rem;
+  }
+  .timeline-item {
+    border-right: 3px solid var(--haqquna-accent);
+    padding: 0.75rem 1rem; margin-bottom: 0.75rem; background: #fff; border-radius: 6px;
+  }
+  table.table-haqquna thead th {
+    background: var(--haqquna-primary); color: #fff; font-weight: 600;
+  }
+  .form-section-title {
+    color: var(--haqquna-dark); border-bottom: 2px solid var(--haqquna-accent);
+    padding-bottom: 0.5rem; margin: 1.5rem 0 1rem 0; font-weight: 600;
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-haqquna navbar-expand-lg shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="{% url 'core:dashboard' %}">
+      <img src="{% static 'img/logo.jpg' %}" alt="حقّنا">
+      <span>
+        <strong>{{ ORG_NAME_AR }}</strong>
+        <small class="d-block" style="font-size:0.7rem;opacity:0.85;">{{ ORG_TAGLINE_AR }}</small>
+      </span>
+    </a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      {% if user.is_authenticated %}
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="{% url 'core:dashboard' %}">
+          <i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'survivors:list' %}">
+          <i class="bi bi-people-fill"></i> الناجون</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'social_survey:list' %}">
+          <i class="bi bi-house-heart"></i> المسح الاجتماعي</a></li>
+        {% if user.can_review or user.is_superuser %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'accounts:audit_log' %}">
+          <i class="bi bi-shield-check"></i> سجل التدقيق</a></li>
+        {% endif %}
+        <li class="nav-item"><a class="nav-link" href="/admin/">
+          <i class="bi bi-gear"></i> إدارة النظام</a></li>
+      </ul>
+      <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">
+            <i class="bi bi-person-circle"></i> {{ user.full_name_ar|default:user.username }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
+              <i class="bi bi-person"></i> ملفي الشخصي</a></li>
+            {% if user.role == 'admin' or user.is_superuser %}
+            <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}">
+              <i class="bi bi-people"></i> المستخدمون</a></li>
+            <li><a class="dropdown-item" href="{% url 'accounts:register' %}">
+              <i class="bi bi-person-plus"></i> إضافة مستخدم</a></li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">
+                  <i class="bi bi-box-arrow-left"></i> تسجيل خروج
+                </button>
+              </form>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% if messages %}
+<div class="container mt-3">
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<main class="container my-4">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer-haqquna">
+  <div class="container">
+    <div>
+      <strong>{{ ORG_NAME_AR }}</strong> · {{ ORG_TAGLINE_AR }}
+    </div>
+    <div class="mt-1" style="font-size:0.75rem;opacity:0.7;">
+      نظام التوثيق مبني وفق بروتوكول إسطنبول · بروتوكول بيركلي · منهجية الـIIIM · دليل Eurojust/ICC
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

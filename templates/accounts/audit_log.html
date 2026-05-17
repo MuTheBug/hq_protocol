@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}سجل التدقيق{% endblock %}
+
+{% block content %}
+<h3 class="text-haqquna"><i class="bi bi-shield-check"></i> سجل التدقيق</h3>
+<p class="text-muted small">آخر 500 إجراء على النظام. كل عملية على ملف ناجٍ تُسجَّل تلقائياً.</p>
+
+<div class="card">
+<table class="table table-haqquna table-sm table-hover mb-0">
+  <thead>
+    <tr>
+      <th>الوقت</th>
+      <th>المستخدم</th>
+      <th>الإجراء</th>
+      <th>النوع</th>
+      <th>السجل</th>
+      <th>IP</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in logs %}
+    <tr>
+      <td><small>{{ log.timestamp|date:"Y-m-d H:i:s" }}</small></td>
+      <td><small>{{ log.user.username|default:"—" }}</small></td>
+      <td><span class="badge bg-secondary">{{ log.get_action_display }}</span></td>
+      <td><small>{{ log.target_model|default:"—" }}</small></td>
+      <td><small>{{ log.target_repr|default:log.path|truncatechars:80 }}</small></td>
+      <td><small>{{ log.ip_address|default:"—" }}</small></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

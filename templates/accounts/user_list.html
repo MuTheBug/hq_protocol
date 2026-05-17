@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}المستخدمون{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="text-haqquna"><i class="bi bi-people"></i> المستخدمون</h3>
+  {% if user.role == 'admin' or user.is_superuser %}
+  <a href="{% url 'accounts:register' %}" class="btn btn-haqquna">
+    <i class="bi bi-person-plus"></i> إضافة مستخدم
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+<table class="table table-haqquna table-hover mb-0">
+  <thead>
+    <tr>
+      <th>اسم المستخدم</th>
+      <th>الاسم الكامل</th>
+      <th>الدور</th>
+      <th>المنظمة</th>
+      <th>اتفاقية السرّية</th>
+      <th>التدريب</th>
+      <th>نشط</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.full_name_ar|default:"—" }}</td>
+      <td><span class="badge bg-secondary">{{ u.get_role_display }}</span></td>
+      <td>{{ u.organization|default:"—" }}</td>
+      <td>
+        {% if u.confidentiality_agreement_signed %}
+        <i class="bi bi-check-circle-fill text-success"></i>
+        {% else %}
+        <i class="bi bi-x-circle text-danger"></i>
+        {% endif %}
+      </td>
+      <td>
+        {% if u.training_istanbul_protocol %}<span class="badge bg-info">إسطنبول</span>{% endif %}
+        {% if u.training_berkeley_protocol %}<span class="badge bg-info">بيركلي</span>{% endif %}
+      </td>
+      <td>
+        {% if u.is_active %}
+        <i class="bi bi-check-circle-fill text-success"></i>
+        {% else %}
+        <i class="bi bi-x-circle text-danger"></i>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

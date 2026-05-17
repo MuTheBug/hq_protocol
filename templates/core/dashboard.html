@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}لوحة التحكم - {{ ORG_NAME_AR }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="text-haqquna mb-1">
+      <i class="bi bi-speedometer2"></i> لوحة التحكم
+    </h3>
+    <p class="text-muted small mb-0">
+      مرحباً {{ user.full_name_ar|default:user.username }} ·
+      {{ user.get_role_display }}
+    </p>
+  </div>
+  <div>
+    <a href="{% url 'survivors:create' %}" class="btn btn-haqquna">
+      <i class="bi bi-person-plus-fill"></i> ملف ناجٍ جديد
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-people-fill text-haqquna" style="font-size:2rem;"></i>
+        <div class="stat-value">{{ stats.total_survivors }}</div>
+        <div class="stat-label">إجمالي الناجين</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-house-heart-fill text-haqquna" style="font-size:2rem;"></i>
+        <div class="stat-value">{{ stats.total_households }}</div>
+        <div class="stat-label">مسوحات اجتماعية</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-file-earmark-text-fill text-haqquna" style="font-size:2rem;"></i>
+        <div class="stat-value">{{ stats.total_documents }}</div>
+        <div class="stat-label">وثائق داعمة</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6">
+    <div class="card stat-card h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-person-vcard text-haqquna" style="font-size:2rem;"></i>
+        <div class="stat-value">{{ stats.total_witnesses }}</div>
+        <div class="stat-label">شهود متقاطعون</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-bar-chart"></i> تصنيف الملفات</div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col">
+            <h4 class="text-success">{{ stats.class_a_files }}</h4>
+            <small>فئة A<br>(محاكم دولية)</small>
+          </div>
+          <div class="col">
+            <h4 class="text-primary">{{ stats.class_b_files }}</h4>
+            <small>فئة B<br>(IIIM/لجنة التحقيق)</small>
+          </div>
+          <div class="col">
+            <h4 class="text-secondary">{{ stats.class_c_files }}</h4>
+            <small>فئة C<br>(أرشيف)</small>
+          </div>
+          <div class="col">
+            <h4 class="text-warning">{{ stats.draft_files }}</h4>
+            <small>مسودات</small>
+          </div>
+        </div>
+        <hr>
+        <div class="row text-center">
+          <div class="col">
+            <h5 class="text-info">{{ stats.released }}</h5>
+            <small>مُفرج عنهم</small>
+          </div>
+          <div class="col">
+            <h5 class="text-warning">{{ stats.still_detained }}</h5>
+            <small>محتجزون</small>
+          </div>
+          <div class="col">
+            <h5 class="text-danger">{{ stats.missing }}</h5>
+            <small>مفقودون</small>
+          </div>
+          <div class="col">
+            <h5 class="text-dark">{{ stats.deceased_custody }}</h5>
+            <small>توفوا في الاحتجاز</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-shield-check"></i> الموافقات المستنيرة</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>موافقات مكتملة</span>
+          <strong class="text-success">{{ stats.consent_compliant }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-3">
+          <span>قيد الاكتمال</span>
+          <strong class="text-warning">{{ stats.consent_pending }}</strong>
+        </div>
+        <div class="progress" style="height: 8px;">
+          {% if stats.total_survivors %}
+          <div class="progress-bar bg-success"
+            style="width: {% widthratio stats.consent_compliant stats.total_survivors 100 %}%"></div>
+          {% endif %}
+        </div>
+        <hr>
+        <small class="text-muted">
+          <i class="bi bi-info-circle"></i>
+          الـIIIM لا تقبل أي ملف بدون موافقة مستنيرة موثّقة.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-geo-alt"></i> الناجون حسب المحافظة</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for row in by_governorate %}
+            <tr>
+              <td>{{ row.governorate_at_detention }}</td>
+              <td class="text-end"><strong>{{ row.count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-muted text-center p-3">لا توجد بيانات بعد</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-building"></i> أكثر فروع الاحتجاز توثيقاً</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for row in by_facility %}
+            <tr>
+              <td>
+                {{ row.facility__name_ar }}
+                {% if row.facility__branch_number %}
+                <small class="text-muted">(فرع {{ row.facility__branch_number }})</small>
+                {% endif %}
+              </td>
+              <td class="text-end"><strong>{{ row.count }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-muted text-center p-3">لا توجد بيانات بعد</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-clock-history"></i> آخر الملفات</span>
+        <a href="{% url 'survivors:list' %}" class="text-decoration-none small">عرض الكل ←</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr><th>المرجع</th><th>الاسم</th><th>التصنيف</th><th>تاريخ الإضافة</th></tr>
+          </thead>
+          <tbody>
+            {% for s in recent_survivors %}
+            <tr>
+              <td><a href="{{ s.get_absolute_url }}">{{ s.case_reference }}</a></td>
+              <td>{{ s.full_name }}</td>
+              <td><span class="badge badge-{{ s.file_classification|lower }}">{{ s.get_file_classification_display }}</span></td>
+              <td><small>{{ s.created_at|date:"Y-m-d" }}</small></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-muted text-center p-3">ابدأ بإضافة أول ملف ناجٍ</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-shield-lock"></i> آخر إجراءات التدقيق</div>
+      <div class="card-body p-0" style="max-height:350px;overflow-y:auto;">
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for log in recent_audit %}
+            <tr>
+              <td><small>{{ log.timestamp|date:"H:i" }}</small></td>
+              <td><small>{{ log.user.username|default:"—" }}</small></td>
+              <td><small>{{ log.get_action_display }}</small></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-muted text-center p-3">لا توجد إجراءات بعد</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

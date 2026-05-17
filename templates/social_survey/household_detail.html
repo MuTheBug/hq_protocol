@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}المسح الاجتماعي - {{ survivor.case_reference }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="text-haqquna">
+      <i class="bi bi-house-heart"></i> المسح الاجتماعي
+    </h3>
+    <p class="text-muted mb-0">
+      {{ survivor.case_reference }} - <strong>{{ survivor.full_name }}</strong>
+    </p>
+  </div>
+  <div>
+    <a href="{% url 'social_survey:household_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+      <i class="bi bi-pencil"></i> تعديل البيانات الأساسية
+    </a>
+    <a href="{{ survivor.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-person"></i> ملف الناجي
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- بيانات الأسرة -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-people"></i> بيانات الأسرة</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-6">الحالة الزوجية</dt>
+          <dd class="col-6">{{ household.get_marital_status_display }}</dd>
+          <dt class="col-6">تغيرت بسبب الاعتقال؟</dt>
+          <dd class="col-6">{% if household.marital_status_changed_due_to_detention %}<span class="text-warning">نعم</span>{% else %}لا{% endif %}</dd>
+          {% if household.spouse_name %}
+          <dt class="col-6">الزوج/ة</dt>
+          <dd class="col-6">{{ household.spouse_name }}{% if household.spouse_age %} ({{ household.spouse_age }} سنة){% endif %}</dd>
+          <dt class="col-6">يعمل/تعمل؟</dt>
+          <dd class="col-6">{% if household.spouse_employed %}نعم - {{ household.spouse_occupation }}{% else %}لا{% endif %}</dd>
+          {% endif %}
+          <dt class="col-6">حجم الأسرة</dt>
+          <dd class="col-6">{{ household.household_size }}</dd>
+          <dt class="col-6">عدد الأبناء</dt>
+          <dd class="col-6">{{ household.children_count }}</dd>
+          <dt class="col-6">أيتام</dt>
+          <dd class="col-6">{{ household.children_count_orphaned }}</dd>
+          <dt class="col-6">معالون</dt>
+          <dd class="col-6">{{ household.dependents_count }}</dd>
+          <dt class="col-6">وضع التهجير</dt>
+          <dd class="col-6">{{ household.get_displacement_status_display }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- السكن -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-house"></i> السكن</span>
+        <a href="{% url 'social_survey:housing_edit' household.pk %}" class="btn btn-sm btn-outline-haqquna">
+          <i class="bi bi-pencil"></i> {% if housing %}تعديل{% else %}إضافة{% endif %}
+        </a>
+      </div>
+      <div class="card-body">
+        {% if housing %}
+        <dl class="row mb-0">
+          <dt class="col-6">نوع السكن</dt>
+          <dd class="col-6">{{ housing.get_housing_type_display }}</dd>
+          {% if housing.rent_amount %}
+          <dt class="col-6">الإيجار الشهري</dt>
+          <dd class="col-6">{{ housing.rent_amount }} {{ housing.get_rent_currency_display }}</dd>
+          <dt class="col-6">متأخرات</dt>
+          <dd class="col-6">{% if housing.rent_overdue %}<span class="text-danger">نعم ({{ housing.rent_overdue_months }} شهر)</span>{% else %}لا{% endif %}</dd>
+          {% endif %}
+          <dt class="col-6">حالة السكن</dt>
+          <dd class="col-6">{{ housing.get_condition_display }}</dd>
+          <dt class="col-6">عدد الغرف</dt>
+          <dd class="col-6">{{ housing.rooms_count }}</dd>
+          <dt class="col-6">المرافق</dt>
+          <dd class="col-6">
+            {% if housing.has_electricity %}<span class="badge bg-success">كهرباء</span>{% endif %}
+            {% if housing.has_water %}<span class="badge bg-success">ماء</span>{% endif %}
+            {% if housing.has_heating %}<span class="badge bg-success">تدفئة</span>{% endif %}
+            {% if housing.has_sanitation %}<span class="badge bg-success">صرف صحي</span>{% endif %}
+            {% if housing.has_internet %}<span class="badge bg-info">إنترنت</span>{% endif %}
+          </dd>
+          <dt class="col-6">مهدَّد بالإخراج</dt>
+          <dd class="col-6">{% if housing.threatened_with_eviction %}<span class="text-danger">نعم</span>{% else %}لا{% endif %}</dd>
+          <dt class="col-6">المصادرة</dt>
+          <dd class="col-6">{% if housing.property_confiscated %}<span class="text-danger">ممتلكاته مصادرة</span>{% else %}لا{% endif %}</dd>
+        </dl>
+        {% else %}
+        <p class="text-muted text-center mb-0">لم تُسجَّل بيانات السكن بعد</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- الأبناء -->
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-person-fill"></i> الأبناء ({{ children.count }})</span>
+        <a href="{% url 'social_survey:child_add' household.pk %}" class="btn btn-sm btn-outline-haqquna">
+          <i class="bi bi-plus"></i> إضافة ابن/ابنة
+        </a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>الجنس</th>
+              <th>العمر</th>
+              <th>المرحلة</th>
+              <th>في المدرسة؟</th>
+              <th>ترك الدراسة؟</th>
+              <th>سبب الترك</th>
+              <th>العمل</th>
+              <th>صحة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in children %}
+            <tr>
+              <td><strong>{{ c.name }}</strong></td>
+              <td><small>{{ c.get_gender_display }}</small></td>
+              <td>{{ c.age|default:"—" }}</td>
+              <td><small>{{ c.get_current_stage_display }}</small></td>
+              <td>{% if c.is_in_school %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-danger"></i>{% endif %}</td>
+              <td>{% if c.dropped_out %}<span class="text-danger">نعم</span>{% else %}—{% endif %}</td>
+              <td><small>{% if c.dropout_due_to_father_detention %}<span class="badge bg-warning">بسبب الاعتقال</span>{% else %}{{ c.dropout_reason|truncatechars:30 }}{% endif %}</small></td>
+              <td><small>{{ c.get_work_status_display }}</small></td>
+              <td>
+                {% if c.has_disability %}<span class="badge bg-danger">إعاقة</span>{% endif %}
+                {% if c.has_chronic_illness %}<span class="badge bg-warning">مرض مزمن</span>{% endif %}
+                {% if c.psychological_issues %}<span class="badge bg-info">نفسية</span>{% endif %}
+              </td>
+              <td><a href="{% url 'social_survey:child_edit' c.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="text-center p-3 text-muted">لم تُضَف بيانات الأبناء بعد</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- التعليم والعمل -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-mortarboard"></i> تعليم الناجي</span>
+        <a href="{% url 'social_survey:education_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+          <i class="bi bi-pencil"></i> {% if education %}تعديل{% else %}إضافة{% endif %}
+        </a>
+      </div>
+      <div class="card-body">
+        {% if education %}
+        <dl class="row mb-0">
+          <dt class="col-6">قبل الاعتقال</dt>
+          <dd class="col-6">{{ education.get_highest_level_before_detention_display }}</dd>
+          <dt class="col-6">حالياً</dt>
+          <dd class="col-6">{{ education.get_highest_level_now_display }}</dd>
+          <dt class="col-6">انقطع بسبب الاعتقال؟</dt>
+          <dd class="col-6">{% if education.studies_interrupted_by_detention %}<span class="text-warning">نعم</span>{% else %}لا{% endif %}</dd>
+          <dt class="col-6">يدرس حالياً؟</dt>
+          <dd class="col-6">{% if education.is_currently_studying %}نعم - {{ education.current_program }}{% else %}لا{% endif %}</dd>
+          <dt class="col-6">يرغب باستئناف؟</dt>
+          <dd class="col-6">{% if education.wants_to_resume %}<span class="text-success">نعم</span>{% else %}—{% endif %}</dd>
+          <dt class="col-6">فقد شهاداته؟</dt>
+          <dd class="col-6">{% if education.certificates_lost %}<span class="text-warning">نعم</span>{% else %}لا{% endif %}</dd>
+        </dl>
+        {% else %}
+        <p class="text-muted text-center">لم تُسجَّل بعد</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-briefcase"></i> العمل والدخل</span>
+        <a href="{% url 'social_survey:employment_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+          <i class="bi bi-pencil"></i> {% if employment %}تعديل{% else %}إضافة{% endif %}
+        </a>
+      </div>
+      <div class="card-body">
+        {% if employment %}
+        <dl class="row mb-0">
+          <dt class="col-6">وضع العمل</dt>
+          <dd class="col-6">{{ employment.get_status_display }}</dd>
+          <dt class="col-6">المهنة قبل الاعتقال</dt>
+          <dd class="col-6">{{ employment.occupation_before_detention|default:"—" }}</dd>
+          <dt class="col-6">المهنة الحالية</dt>
+          <dd class="col-6">{{ employment.current_occupation|default:"—" }}</dd>
+          {% if employment.monthly_income %}
+          <dt class="col-6">الدخل الشهري</dt>
+          <dd class="col-6">{{ employment.monthly_income }} {{ employment.get_income_currency_display }}</dd>
+          {% endif %}
+          <dt class="col-6">يغطي الاحتياجات؟</dt>
+          <dd class="col-6">{% if employment.income_covers_basic_needs %}<span class="text-success">نعم</span>{% else %}<span class="text-danger">لا</span>{% endif %}</dd>
+          <dt class="col-6">مصادر دخل أخرى</dt>
+          <dd class="col-6">
+            {% if employment.has_humanitarian_aid %}<span class="badge bg-info">مساعدات</span>{% endif %}
+            {% if employment.has_family_support %}<span class="badge bg-info">أهل</span>{% endif %}
+            {% if employment.has_remittance %}<span class="badge bg-info">حوالات</span>{% endif %}
+            {% if employment.has_pension %}<span class="badge bg-info">تقاعد</span>{% endif %}
+          </dd>
+        </dl>
+        {% else %}
+        <p class="text-muted text-center">لم تُسجَّل بعد</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- الصحة -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-heart-pulse"></i> الصحة والوصول للرعاية</span>
+        <a href="{% url 'social_survey:health_edit' household.pk %}" class="btn btn-sm btn-outline-haqquna">
+          <i class="bi bi-pencil"></i> {% if health %}تعديل{% else %}إضافة{% endif %}
+        </a>
+      </div>
+      <div class="card-body">
+        {% if health %}
+        <dl class="row mb-0">
+          <dt class="col-7">تأمين صحي</dt>
+          <dd class="col-5">{% if health.has_health_insurance %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-danger"></i>{% endif %}</dd>
+          <dt class="col-7">رعاية أولية</dt>
+          <dd class="col-5">{% if health.access_to_primary_care %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-danger"></i>{% endif %}</dd>
+          <dt class="col-7">رعاية متخصصة</dt>
+          <dd class="col-5">{% if health.access_to_specialized_care %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-danger"></i>{% endif %}</dd>
+          <dt class="col-7">دعم نفسي</dt>
+          <dd class="col-5">{% if health.psychological_support_received %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-danger"></i>{% endif %}</dd>
+          <dt class="col-7">الأدوية متاحة؟</dt>
+          <dd class="col-5">{% if health.medications_unaffordable %}<span class="text-danger">لا</span>{% else %}<span class="text-success">نعم</span>{% endif %}</dd>
+          <dt class="col-7">الأمن الغذائي</dt>
+          <dd class="col-5">{{ health.get_food_security_display }}</dd>
+          <dt class="col-7">وجبات يومية</dt>
+          <dd class="col-5">{{ health.meals_per_day }}</dd>
+          <dt class="col-7">ذوو إعاقة في الأسرة</dt>
+          <dd class="col-5">{{ health.family_members_with_disability }}</dd>
+        </dl>
+        {% else %}
+        <p class="text-muted text-center">لم تُسجَّل بعد</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- الاحتياجات -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-clipboard-check"></i> تقييم الاحتياجات</span>
+        <a href="{% url 'social_survey:needs_edit' household.pk %}" class="btn btn-sm btn-outline-haqquna">
+          <i class="bi bi-pencil"></i> {% if needs %}تعديل{% else %}إضافة{% endif %}
+        </a>
+      </div>
+      <div class="card-body">
+        {% if needs %}
+        <table class="table table-sm mb-2">
+          <tr><td>مالية</td><td><span class="badge bg-secondary">{{ needs.get_financial_aid_priority_display }}</span></td></tr>
+          <tr><td>غذائية</td><td><span class="badge bg-secondary">{{ needs.get_food_aid_priority_display }}</span></td></tr>
+          <tr><td>سكن</td><td><span class="badge bg-secondary">{{ needs.get_housing_aid_priority_display }}</span></td></tr>
+          <tr><td>طبية</td><td><span class="badge bg-secondary">{{ needs.get_medical_aid_priority_display }}</span></td></tr>
+          <tr><td>نفسية</td><td><span class="badge bg-secondary">{{ needs.get_psychological_support_priority_display }}</span></td></tr>
+          <tr><td>قانونية</td><td><span class="badge bg-secondary">{{ needs.get_legal_aid_priority_display }}</span></td></tr>
+          <tr><td>تعليم الأبناء</td><td><span class="badge bg-secondary">{{ needs.get_education_aid_priority_display }}</span></td></tr>
+          <tr><td>تدريب مهني</td><td><span class="badge bg-secondary">{{ needs.get_vocational_training_priority_display }}</span></td></tr>
+        </table>
+        <div class="small">
+          {% if needs.needs_id_card %}<span class="badge bg-warning">يحتاج هوية</span>{% endif %}
+          {% if needs.needs_family_booklet %}<span class="badge bg-warning">دفتر عائلة</span>{% endif %}
+          {% if needs.needs_security_clearance %}<span class="badge bg-warning">إخراج قيد</span>{% endif %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center">لم يُسجَّل تقييم بعد</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-circle"></i> ملفي الشخصي</div>
+      <div class="card-body">
+        <p class="text-muted small">
+          اسم المستخدم: <strong>{{ user.username }}</strong> ·
+          الدور: <strong>{{ user.get_role_display }}</strong>
+        </p>
+        <form method="post">
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-haqquna"><i class="bi bi-save"></i> حفظ</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

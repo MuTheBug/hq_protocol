@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="text-haqquna">{{ title }}</h3>
+  {% if survivor %}
+  <a href="{{ survivor.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-right"></i> رجوع للملف
+  </a>
+  {% endif %}
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-card-text"></i> بيانات أساسية</div>
+    <div class="card-body">
+      <div class="row">
+        {% for field in form %}
+        <div class="col-md-{% if field.field.widget.input_type == 'checkbox' or field.name in 'political_affiliation,address_at_detention,death_circumstances,previous_interviews_with,referral_notes' %}12{% else %}6{% endif %} mb-3">
+          <label class="form-label">
+            {{ field.label }}
+            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+          </label>
+          {% if field.field.widget.input_type == 'checkbox' %}
+          <div class="form-check">
+            {{ field }}
+            <small class="text-muted">{{ field.help_text }}</small>
+          </div>
+          {% else %}
+          {{ field }}
+          {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+          {% endif %}
+          {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-haqquna btn-lg">
+    <i class="bi bi-save"></i> {{ submit_label }}
+  </button>
+  <a href="{% url 'survivors:list' %}" class="btn btn-secondary btn-lg">إلغاء</a>
+</form>
+{% endblock %}

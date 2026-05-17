@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}إضافة مستخدم{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-plus"></i> إضافة مستخدم جديد</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<small class="text-muted d-block">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-haqquna">
+            <i class="bi bi-save"></i> إنشاء الحساب
+          </button>
+          <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">إلغاء</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
