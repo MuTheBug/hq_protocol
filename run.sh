@@ -109,7 +109,37 @@ fi
 # ---- ٤. ترحيل قاعدة البيانات ----
 step "ترحيل قاعدة البيانات"
 $PY manage.py migrate --noinput
-ok "قاعدة البيانات جاهزة"
+ok "تم تطبيق الترحيلات"
+
+# ---- ٤.١ فحص سلامة المخطط ----
+# يكتشف الحالة الشائعة: db.sqlite3 من إصدار قديم لكن جدول migrations يدّعي
+# أن الترحيلات مطبّقة، فلا يُعيد Django إنشاء الأعمدة الجديدة.
+SCHEMA_CHECK_SCRIPT='
+import os, django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hq_protocol.settings")
+django.setup()
+from django.db.utils import OperationalError, ProgrammingError
+from survivors.models import SurvivorProfile
+try:
+    SurvivorProfile.objects.filter(birth_governorate="").exists()
+except (OperationalError, ProgrammingError):
+    raise SystemExit(1)
+'
+if ! $PY -c "$SCHEMA_CHECK_SCRIPT" 2>/dev/null; then
+    warn "اكتُشف مخطط قديم في db.sqlite3 (أعمدة جديدة مفقودة)"
+    if [ -f "db.sqlite3" ]; then
+        BACKUP="db.sqlite3.old.$(date +%Y%m%d_%H%M%S)"
+        cp db.sqlite3 "$BACKUP"
+        info "نسخة احتياطية: $BACKUP"
+        rm -f db.sqlite3
+    fi
+    info "إعادة بناء قاعدة البيانات بالمخطط الجديد..."
+    $PY manage.py migrate --noinput
+    ok "تمت إعادة البناء"
+    SCHEMA_REBUILT=1
+else
+    ok "المخطط سليم"
+fi
 
 # ---- ٥. إنشاء/تحديث حساب المسؤول ----
 step "حساب المسؤول"
