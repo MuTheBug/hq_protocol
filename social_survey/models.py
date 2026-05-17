@@ -60,9 +60,6 @@ class HouseholdSurvey(models.Model):
         _("عدد المعالين كلياً"), default=0,
     )
     children_count = models.PositiveIntegerField(_("عدد الأبناء"), default=0)
-    children_count_orphaned = models.PositiveIntegerField(
-        _("عدد الأبناء اليتامى (إن فُقد أحد الوالدين بسبب الاعتقال)"), default=0,
-    )
 
     # ---- وضع التهجير ----
     displacement_status = models.CharField(

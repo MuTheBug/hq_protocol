@@ -88,7 +88,12 @@
     </div>
     <div class="col-md-6">
       <div class="card mb-3">
-        <div class="card-header">معلومات الاتصال الحالية</div>
+        <div class="card-header d-flex justify-content-between">
+          <span>معلومات الاتصال الحالية</span>
+          <a href="{% url 'survivors:contact_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+            <i class="bi bi-pencil"></i> تعديل
+          </a>
+        </div>
         <div class="card-body">
           <dl class="row mb-0">
             <dt class="col-5">الهاتف</dt><dd class="col-7">{{ survivor.current_phone|default:"—" }}</dd>
@@ -98,6 +103,29 @@
             <dt class="col-5">المدينة</dt><dd class="col-7">{{ survivor.current_city|default:"—" }}</dd>
             <dt class="col-5">قريب للتواصل</dt><dd class="col-7">{{ survivor.next_of_kin_name|default:"—" }} ({{ survivor.next_of_kin_relation|default:"—" }})</dd>
             <dt class="col-5">هاتف القريب</dt><dd class="col-7">{{ survivor.next_of_kin_phone|default:"—" }}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between">
+          <span>الصور والإحالات</span>
+          <div>
+            <a href="{% url 'survivors:photos_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+              <i class="bi bi-image"></i> الصور
+            </a>
+            <a href="{% url 'survivors:referrals_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
+              <i class="bi bi-arrow-up-right-circle"></i> الإحالات
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-7">صورة حديثة</dt><dd class="col-5">{% if survivor.photo_recent %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-muted"></i>{% endif %}</dd>
+            <dt class="col-7">صورة قبل الاعتقال</dt><dd class="col-5">{% if survivor.photo_before_detention %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-x text-muted"></i>{% endif %}</dd>
+            <dt class="col-7">إحالة طبية</dt><dd class="col-5">{% if survivor.medical_referral_offered %}<i class="bi bi-check-circle text-success"></i>{% else %}—{% endif %}</dd>
+            <dt class="col-7">إحالة نفسية</dt><dd class="col-5">{% if survivor.psychological_referral_offered %}<i class="bi bi-check-circle text-success"></i>{% else %}—{% endif %}</dd>
+            <dt class="col-7">مساعدة قانونية</dt><dd class="col-5">{% if survivor.legal_aid_offered %}<i class="bi bi-check-circle text-success"></i>{% else %}—{% endif %}</dd>
           </dl>
         </div>
       </div>
@@ -143,10 +171,20 @@
 
 <!-- الموافقة -->
 <div class="tab-pane fade" id="consent">
+  <div class="alert alert-info d-flex justify-content-between align-items-center">
+    <div>
+      <i class="bi bi-printer"></i>
+      <strong>طباعة نموذج الموافقة</strong> ليُوقّعه الناجي بخط يده (PDF عبر متصفحك).
+    </div>
+    <a href="{% url 'survivors:consent_print' survivor.pk %}" class="btn btn-haqquna" target="_blank">
+      <i class="bi bi-file-earmark-pdf"></i> طباعة / PDF
+    </a>
+  </div>
+
   {% if consent %}
   <div class="card mb-3">
     <div class="card-header d-flex justify-content-between">
-      <span>الموافقة المستنيرة</span>
+      <span>الموافقة المستنيرة المُسجَّلة في النظام</span>
       <a href="{% url 'survivors:consent_edit' survivor.pk %}" class="btn btn-sm btn-outline-haqquna">
         <i class="bi bi-pencil"></i> تعديل
       </a>
@@ -202,6 +240,8 @@
   </div>
   {% endif %}
 </div>
+
+{# انتهى تبويب الموافقة #}
 
 <!-- الاحتجاز -->
 <div class="tab-pane fade" id="detention">

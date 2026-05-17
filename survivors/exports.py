@@ -392,3 +392,20 @@ def survivor_print(request, pk):
         "interviews": survivor.interviews.prefetch_related("media").all(),
         "today": datetime.now(),
     })
+
+
+@login_required
+def consent_print(request, pk):
+    """نموذج الموافقة المستنيرة جاهز للطباعة وتوقيع الناجي بخط يده."""
+    survivor = get_object_or_404(SurvivorProfile, pk=pk)
+    AuditLog.objects.create(
+        user=request.user, action=AuditLog.Action.EXPORT,
+        target_model="InformedConsent",
+        target_repr=f"طباعة نموذج موافقة {survivor.case_reference}",
+        path=request.path, ip_address=request.META.get("REMOTE_ADDR"),
+    )
+    return render(request, "survivors/consent_print.html", {
+        "survivor": survivor,
+        "consent": getattr(survivor, "consent", None),
+        "today": datetime.now(),
+    })

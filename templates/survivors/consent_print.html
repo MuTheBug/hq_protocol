@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>نموذج الموافقة المستنيرة - {{ survivor.case_reference }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  body { font-family: 'Cairo', sans-serif; color: #222; line-height: 1.7;
+    font-size: 11pt; max-width: 210mm; margin: 0 auto; padding: 1cm; }
+  .toolbar { position: fixed; top: 10px; left: 10px; z-index: 999; }
+  .toolbar button { padding: 8px 16px; background: #1c6b85; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer; margin-left: 5px; font-family: inherit; }
+  @media print { .toolbar { display: none; } body { padding: 0; } }
+
+  .header { display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 3px solid #1c6b85; padding-bottom: 12px; margin-bottom: 20px; }
+  .header img { height: 80px; }
+  .org-info { text-align: right; }
+  .org-info h1 { color: #1c6b85; margin: 0; font-size: 1.4rem; }
+  .org-info .tagline { color: #666; font-size: 0.85rem; }
+
+  h2 { color: #1c6b85; font-size: 1.1rem; border-bottom: 1px solid #4fbfd6;
+    padding-bottom: 4px; margin: 18px 0 10px 0; }
+  h3 { color: #0e3d4d; font-size: 0.95rem; margin: 12px 0 6px 0; }
+
+  .intro { background: #f6f8fa; border-right: 4px solid #1c6b85;
+    padding: 12px; margin: 15px 0; }
+  .intro p { margin: 5px 0; }
+
+  .ref-box { display: inline-block; background: #1c6b85; color: white;
+    padding: 4px 12px; border-radius: 4px; font-weight: 600; }
+
+  ul { margin: 5px 0; padding-right: 25px; }
+  ul li { margin: 4px 0; }
+
+  .signature-area { margin-top: 25px; padding: 15px;
+    border: 2px solid #1c6b85; border-radius: 8px;
+    background: #fafdfe; page-break-inside: avoid; }
+  .signature-row { display: flex; gap: 30px; margin: 15px 0; }
+  .signature-row > div { flex: 1; }
+  .sig-line { border-bottom: 1px solid #333; height: 40px;
+    margin-top: 8px; }
+  .small-label { font-size: 0.85rem; color: #555; }
+
+  .checkbox-list { list-style: none; padding: 0; }
+  .checkbox-list li { padding: 6px 0; border-bottom: 1px dotted #ddd; }
+  .checkbox-list .box { display: inline-block; width: 18px; height: 18px;
+    border: 1.5px solid #333; vertical-align: middle; margin-left: 8px; }
+
+  .footer-note { margin-top: 25px; padding: 10px;
+    background: #fff3cd; border-right: 4px solid #ffc107;
+    font-size: 0.85rem; }
+
+  .legal { font-size: 0.85rem; text-align: justify; }
+  .text-haqquna { color: #1c6b85; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+  <button onclick="window.close()">إغلاق</button>
+</div>
+
+<!-- ترويسة -->
+<div class="header">
+  <div class="org-info">
+    <h1>جمعية حقّنا</h1>
+    <div class="tagline">جمعية اجتماعية ثقافية</div>
+    <div class="small-label">HAQQUNA · Civil Society Organization</div>
+  </div>
+  <img src="{% static 'img/logo.jpg' %}" alt="حقّنا">
+</div>
+
+<h2 style="text-align:center;font-size:1.3rem;">نموذج الموافقة المستنيرة</h2>
+<div style="text-align:center;margin-bottom:15px;">
+  <span class="ref-box">رقم القضية: {{ survivor.case_reference }}</span>
+</div>
+
+<!-- مقدمة -->
+<div class="intro">
+  <p class="legal">
+    أنا الموقّع/ة أدناه، السيد/ة <strong>{{ survivor.full_name }}</strong>،
+    {% if survivor.national_id %}حامل/ة الرقم الوطني <strong>{{ survivor.national_id }}</strong>،{% endif %}
+    أُقرّ بأنني أُدلي بإفادتي وأشارك معلوماتي مع <strong>جمعية حقّنا</strong> بكامل إرادتي ودون أي إكراه،
+    لغرض توثيق ما تعرّضت له من انتهاكات خلال فترة احتجازي.
+  </p>
+  <p class="legal">
+    وقد أوضح/ت لي ممثلو الجمعية الغرضَ من جمع هذه المعلومات، والاستخداماتِ المحتملة لها،
+    وحقوقي كناجٍ/كناجية فيما يخص بياناتي، قبل البدء بأي مقابلة.
+  </p>
+</div>
+
+<!-- فهمت كل شي -->
+<h2>أولاً: الإقرار بالفهم</h2>
+<p>أقرّ بأنني فهمت ما يلي:</p>
+<ul class="checkbox-list">
+  <li>
+    <span class="box">{% if consent.confidentiality_limits_explained %}✓{% endif %}</span>
+    أن جميع المعلومات التي أُدلي بها ستُحفظ بسرّية تامة، وأن السرّية المطلقة قد لا تكون ممكنة في حالات معيّنة
+    (مثل وجود خطر وشيك على شخص ما، أو طلب رسمي من جهة قضائية مختصة).
+  </li>
+  <li>
+    <span class="box">{% if consent.intended_uses_explained %}✓{% endif %}</span>
+    أن المعلومات قد تُستخدم لأغراض التوثيق والمناصرة والعدالة، وأنها قد تُشارَك—بموافقتي المحددة أدناه—مع جهات أممية
+    ودولية مثل الآلية الدولية المحايدة المستقلة لسوريا (IIIM)، أو لجنة التحقيق الأممية، أو المحاكم المختصة.
+  </li>
+  <li>
+    <span class="box">{% if consent.withdrawal_right_explained %}✓{% endif %}</span>
+    أن لي الحق في سحب موافقتي في أي وقت، كلياً أو جزئياً، دون أي عواقب عليّ، وذلك بإبلاغ الجمعية كتابياً أو شفهياً.
+  </li>
+  <li>
+    <span class="box">✓</span>
+    أن لي الحق في الإطلاع على ملفي، وطلب تعديل أو حذف أي معلومة، أو إخفاء هويتي كلياً أو جزئياً.
+  </li>
+  <li>
+    <span class="box">✓</span>
+    أن المشاركة تطوّعية تماماً ولا يترتب عليها أي مقابل مادي أو وعد بأي مساعدة محددة.
+  </li>
+</ul>
+
+<!-- نطاق المشاركة -->
+<h2>ثانياً: نطاق المشاركة (الموافقة الطبقية)</h2>
+<p>أُجيز مشاركة ملفي مع الجهات التالية (يتم اختيارها بوضع علامة ✓):</p>
+<ul class="checkbox-list">
+  <li><span class="box">{% if consent.share_with_iiim %}✓{% endif %}</span> الآلية الدولية المحايدة المستقلة لسوريا (IIIM)</li>
+  <li><span class="box">{% if consent.share_with_coi %}✓{% endif %}</span> لجنة التحقيق الدولية الأممية المعنية بسوريا (CoI)</li>
+  <li><span class="box">{% if consent.share_with_icc %}✓{% endif %}</span> المحكمة الجنائية الدولية (ICC)</li>
+  <li><span class="box">{% if consent.share_with_universal_jurisdiction %}✓{% endif %}</span> محاكم الولاية القضائية العالمية (ألمانيا، فرنسا، السويد، إلخ)</li>
+  <li><span class="box">{% if consent.share_with_partner_orgs %}✓{% endif %}</span> منظمات شريكة موثوقة في مجال حقوق الإنسان والتوثيق</li>
+  <li><span class="box">{% if consent.share_with_media %}✓{% endif %}</span> الإعلام (مع الالتزام بشروط الخصوصية)</li>
+  <li><span class="box">{% if consent.share_publicly %}✓{% endif %}</span> النشر العلني (تقارير، مواقع، إلخ)</li>
+</ul>
+
+<!-- إخفاء الهوية -->
+<h2>ثالثاً: إخفاء الهوية</h2>
+<p>أرغب بأن تتم مشاركة معلوماتي مع إخفاء العناصر التالية من هويتي:</p>
+<ul class="checkbox-list">
+  <li><span class="box">{% if consent.anonymize_name %}✓{% endif %}</span> إخفاء اسمي (يُستبدل برمز/رقم مرجعي)</li>
+  <li><span class="box">{% if consent.anonymize_photo %}✓{% endif %}</span> إخفاء صوري</li>
+  <li><span class="box">{% if consent.anonymize_location %}✓{% endif %}</span> إخفاء موقعي الحالي</li>
+  <li><span class="box">{% if consent.anonymize_family_details %}✓{% endif %}</span> إخفاء تفاصيل عائلتي</li>
+</ul>
+
+<!-- تسجيل المقابلة -->
+<h2>رابعاً: تسجيل المقابلة</h2>
+<p class="legal">
+  أُوافق على تسجيل المقابلة (صوتياً أو بالفيديو) إذا تمت الإشارة لذلك من قبل الموثّق،
+  وأفهم أن التسجيل سيُحفظ في قاعدة بيانات الجمعية المشفّرة، ولن يُنشر علناً إلا بموافقة كتابية إضافية مني.
+</p>
+<p>
+  <span class="box">{% if consent.consent_documented %}✓{% endif %}</span>
+  أوافق على تسجيل المقابلة لأغراض التوثيق.
+</p>
+
+<!-- التواقيع -->
+<div class="signature-area">
+<h3 style="margin-top:0;">خامساً: التوقيع والتاريخ</h3>
+
+<div class="signature-row">
+  <div>
+    <div class="small-label">اسم الناجي/ة:</div>
+    <div class="sig-line"></div>
+    <div class="small-label" style="text-align:center;margin-top:4px;">{{ survivor.full_name }}</div>
+  </div>
+  <div>
+    <div class="small-label">توقيع الناجي/ة:</div>
+    <div class="sig-line"></div>
+  </div>
+</div>
+
+<div class="signature-row">
+  <div>
+    <div class="small-label">المكان:</div>
+    <div class="sig-line"></div>
+  </div>
+  <div>
+    <div class="small-label">التاريخ:</div>
+    <div class="sig-line"></div>
+    <div class="small-label" style="text-align:center;margin-top:4px;">
+      {% if consent.consent_date %}{{ consent.consent_date|date:"Y-m-d" }}{% else %}     /     /     {% endif %}
+    </div>
+  </div>
+</div>
+
+<hr style="margin:15px 0;border-color:#ddd;">
+
+<h3>توقيع مَن أخذ الموافقة (الموثّق):</h3>
+<div class="signature-row">
+  <div>
+    <div class="small-label">اسم الموثّق:</div>
+    <div class="sig-line"></div>
+    {% if survivor.documenter %}<div class="small-label" style="text-align:center;margin-top:4px;">{{ survivor.documenter.full_name_ar|default:survivor.documenter.username }}</div>{% endif %}
+  </div>
+  <div>
+    <div class="small-label">توقيعه:</div>
+    <div class="sig-line"></div>
+  </div>
+</div>
+
+{% if consent.consent_witness %}
+<h3>شاهد على الموافقة:</h3>
+<div class="signature-row">
+  <div>
+    <div class="small-label">اسم الشاهد:</div>
+    <div class="sig-line"></div>
+    <div class="small-label" style="text-align:center;margin-top:4px;">{{ consent.consent_witness }}</div>
+  </div>
+  <div>
+    <div class="small-label">توقيعه:</div>
+    <div class="sig-line"></div>
+  </div>
+</div>
+{% else %}
+<h3>شاهد على الموافقة (اختياري):</h3>
+<div class="signature-row">
+  <div>
+    <div class="small-label">اسم الشاهد:</div>
+    <div class="sig-line"></div>
+  </div>
+  <div>
+    <div class="small-label">توقيعه:</div>
+    <div class="sig-line"></div>
+  </div>
+</div>
+{% endif %}
+
+</div>
+
+<!-- ملاحظة قانونية ختامية -->
+<div class="footer-note">
+  <strong>ملاحظة:</strong> هذا النموذج يخضع لمنهجية بروتوكول إسطنبول (Rev. 2, 2022)،
+  بروتوكول بيركلي (2022)، ومبادئ الـIIIM للموافقة المستنيرة وحماية الشهود.
+  يحق للناجي/ة طلب نسخة من هذا النموذج بعد توقيعه، وحفظها مع وثائقه الشخصية.
+</div>
+
+<div style="margin-top:30px;font-size:0.7rem;color:#666;border-top:1px solid #ddd;padding-top:8px;text-align:center;">
+  جمعية حقّنا — تاريخ الطباعة: {{ today|date:"Y-m-d H:i" }} — رقم الملف: {{ survivor.case_reference }}
+</div>
+
+</body>
+</html>

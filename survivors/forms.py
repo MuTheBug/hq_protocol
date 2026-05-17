@@ -12,19 +12,97 @@ from .models import (
 )
 
 
+def _bootstrapify(form):
+    for name, field in form.fields.items():
+        widget = field.widget
+        css = widget.attrs.get("class", "")
+        if isinstance(widget, forms.CheckboxInput):
+            widget.attrs["class"] = (css + " form-check-input").strip()
+        elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
+            widget.attrs["class"] = (css + " form-select").strip()
+        else:
+            widget.attrs["class"] = (css + " form-control").strip()
+
+
 class SurvivorProfileForm(forms.ModelForm):
+    """نموذج إنشاء/تعديل الملف الأساسي - فقط حقول الهوية والاعتقال الجوهرية.
+
+    تم نقل: معلومات الاتصال الحالية، الصور، الإحالات الطبية إلى نماذج منفصلة
+    حتى لا تتكرر مع المسح الاجتماعي وأقسام أخرى.
+    """
+
     class Meta:
         model = SurvivorProfile
-        exclude = (
-            "case_uid", "created_at", "updated_at", "documenter",
-            "reliability_score", "corroboration_score", "completeness_score",
+        fields = (
+            "case_reference", "file_classification",
+            # الاسم
+            "first_name", "father_name", "grandfather_name", "family_name",
+            "mother_name", "alias",
+            # الهوية
+            "national_id", "birth_date", "birth_date_approximate",
+            "birth_governorate", "birth_place_detail",
+            "gender", "nationality",
+            # السياق وقت الاعتقال
+            "marital_status_at_detention",
+            "occupation_category", "occupation_detail",
+            "political_activity_category", "political_activity_detail",
+            "governorate_at_detention", "address_at_detention",
         )
         widgets = {
             "birth_date": forms.DateInput(attrs={"type": "date"}),
             "address_at_detention": forms.Textarea(attrs={"rows": 2}),
             "political_activity_detail": forms.Textarea(attrs={"rows": 3}),
-            "referral_notes": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _bootstrapify(self)
+
+
+class SurvivorContactForm(forms.ModelForm):
+    """معلومات الاتصال الحالية + قريب للتواصل."""
+
+    class Meta:
+        model = SurvivorProfile
+        fields = (
+            "current_phone", "current_email",
+            "current_country", "current_governorate", "current_city",
+            "next_of_kin_name", "next_of_kin_relation", "next_of_kin_phone",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _bootstrapify(self)
+
+
+class SurvivorPhotosForm(forms.ModelForm):
+    """صور الناجي (حديثة + قبل الاعتقال)."""
+
+    class Meta:
+        model = SurvivorProfile
+        fields = ("photo_recent", "photo_before_detention")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _bootstrapify(self)
+
+
+class SurvivorReferralsForm(forms.ModelForm):
+    """الإحالات الطبية والنفسية والقانونية المُقدَّمة للناجي."""
+
+    class Meta:
+        model = SurvivorProfile
+        fields = (
+            "medical_referral_offered", "psychological_referral_offered",
+            "legal_aid_offered", "referral_notes",
+        )
+        widgets = {
+            "referral_notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _bootstrapify(self)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

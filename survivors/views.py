@@ -11,8 +11,9 @@ from accounts.models import AuditLog
 from .forms import (
     DetentionEventForm, DetentionPeriodForm, InformedConsentForm,
     InterviewForm, InterviewMediaForm, MedicalAssessmentForm,
-    ReleaseEventForm, SupportingDocumentForm, SurvivorNoteForm,
-    SurvivorProfileForm, SurvivorSearchForm, WitnessForm,
+    ReleaseEventForm, SupportingDocumentForm, SurvivorContactForm,
+    SurvivorNoteForm, SurvivorPhotosForm, SurvivorProfileForm,
+    SurvivorReferralsForm, SurvivorSearchForm, WitnessForm,
 )
 from .models import (
     InformedConsent, Interview, InterviewMedia, SurvivorNote, SurvivorProfile,
@@ -600,3 +601,49 @@ def media_delete(request, pk):
         messages.success(request, _("تم حذف الملف."))
         return redirect("survivors:interview_detail", pk=interview_pk)
     return render(request, "survivors/media_delete_confirm.html", {"media": media})
+
+
+# ============================================================
+# الأقسام الفرعية للملف الأساسي (Contact, Photos, Referrals)
+# ============================================================
+
+def _generic_section_edit(request, pk, form_class, title):
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    survivor = get_object_or_404(SurvivorProfile, pk=pk)
+    if request.method == "POST":
+        form = form_class(request.POST, request.FILES, instance=survivor)
+        if form.is_valid():
+            form.save()
+            _log_action(request, AuditLog.Action.UPDATE, survivor)
+            messages.success(request, _("تم حفظ التعديلات."))
+            return redirect("survivors:detail", pk=survivor.pk)
+    else:
+        form = form_class(instance=survivor)
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": survivor,
+        "title": title, "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def contact_edit(request, pk):
+    return _generic_section_edit(
+        request, pk, SurvivorContactForm,
+        _("معلومات الاتصال والقريب"),
+    )
+
+
+@login_required
+def photos_edit(request, pk):
+    return _generic_section_edit(
+        request, pk, SurvivorPhotosForm, _("صور الناجي"),
+    )
+
+
+@login_required
+def referrals_edit(request, pk):
+    return _generic_section_edit(
+        request, pk, SurvivorReferralsForm,
+        _("الإحالات الطبية والنفسية والقانونية"),
+    )

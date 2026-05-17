@@ -69,8 +69,7 @@ class HouseholdSurveyAdmin(admin.ModelAdmin):
         }),
         (_("حجم الأسرة"), {
             "fields": (
-                "household_size", "dependents_count",
-                "children_count", "children_count_orphaned",
+                "household_size", "dependents_count", "children_count",
             ),
         }),
         (_("التهجير"), {
