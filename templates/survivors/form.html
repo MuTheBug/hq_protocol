@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load widget_helpers %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
@@ -19,7 +20,7 @@
     <div class="card-body">
       <div class="row">
         {% for field in form %}
-        <div class="col-md-{% if field.field.widget.input_type == 'checkbox' or field.name in 'political_affiliation,address_at_detention,death_circumstances,previous_interviews_with,referral_notes' %}12{% else %}6{% endif %} mb-3">
+        <div class="{{ field|field_col }} mb-3">
           <label class="form-label">
             {{ field.label }}
             {% if field.field.required %}<span class="text-danger">*</span>{% endif %}

@@ -1,3 +1,6 @@
+import mimetypes
+import os
+
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
@@ -10,6 +13,59 @@ from .models import (
     Interview, InterviewMedia, MedicalAssessment, ReleaseEvent,
     SupportingDocument, SurvivorNote, SurvivorProfile, TortureMethod, Witness,
 )
+
+# ============================================================
+# قواعد التحقق من ملفات الرفع - حماية من رفع ملفات خبيثة
+# ============================================================
+
+# الحدود (بايت)
+MAX_PDF_BYTES = 20 * 1024 * 1024     # 20MB
+MAX_IMAGE_BYTES = 10 * 1024 * 1024    # 10MB
+MAX_AUDIO_BYTES = 50 * 1024 * 1024    # 50MB
+MAX_VIDEO_BYTES = 200 * 1024 * 1024   # 200MB
+MAX_DOC_BYTES = 30 * 1024 * 1024      # 30MB - وثائق Word/Excel
+
+ALLOWED_DOC_EXTS = {
+    ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic",
+    ".doc", ".docx", ".xls", ".xlsx", ".odt", ".txt",
+    ".mp4", ".mov", ".webm", ".mp3", ".m4a", ".ogg", ".wav",
+}
+ALLOWED_MEDIA_EXTS = {
+    ".mp4", ".mov", ".webm", ".mkv", ".avi",
+    ".mp3", ".m4a", ".ogg", ".wav", ".aac",
+    ".pdf", ".txt", ".docx", ".odt",
+    ".jpg", ".jpeg", ".png", ".webp",
+}
+DANGEROUS_EXTS = {
+    ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs", ".js",
+    ".jar", ".scr", ".com", ".msi", ".app", ".apk",
+    ".php", ".py", ".pl", ".rb", ".lua",
+    ".html", ".htm", ".svg",  # ممكن تحتوي JS
+}
+
+
+def _validate_upload(uploaded, allowed_exts, max_bytes, kind="ملف"):
+    """فحص امتداد + حجم + رفض الامتدادات الخطرة. يُستخدم من clean_file()."""
+    if not uploaded:
+        return uploaded
+    name = (uploaded.name or "").lower()
+    ext = os.path.splitext(name)[1]
+
+    if ext in DANGEROUS_EXTS:
+        raise forms.ValidationError(
+            _("نوع الملف '%(e)s' غير مسموح لأسباب أمنية.") % {"e": ext},
+        )
+    if ext not in allowed_exts:
+        raise forms.ValidationError(
+            _("امتداد '%(e)s' غير مسموح. الامتدادات المسموحة: %(a)s")
+            % {"e": ext, "a": ", ".join(sorted(allowed_exts))},
+        )
+    if uploaded.size > max_bytes:
+        raise forms.ValidationError(
+            _("الملف أكبر من الحد المسموح (%(mb)d ميغا). حجمه: %(s)d ميغا.")
+            % {"mb": max_bytes // (1024*1024), "s": uploaded.size // (1024*1024)},
+        )
+    return uploaded
 
 
 def _bootstrapify(form):
@@ -78,6 +134,8 @@ class SurvivorContactForm(forms.ModelForm):
 class SurvivorPhotosForm(forms.ModelForm):
     """صور الناجي (حديثة + قبل الاعتقال)."""
 
+    _IMG_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif"}
+
     class Meta:
         model = SurvivorProfile
         fields = ("photo_recent", "photo_before_detention")
@@ -85,6 +143,14 @@ class SurvivorPhotosForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _bootstrapify(self)
+
+    def clean_photo_recent(self):
+        photo = self.cleaned_data.get("photo_recent")
+        return _validate_upload(photo, self._IMG_EXTS, MAX_IMAGE_BYTES, "صورة") if photo else photo
+
+    def clean_photo_before_detention(self):
+        photo = self.cleaned_data.get("photo_before_detention")
+        return _validate_upload(photo, self._IMG_EXTS, MAX_IMAGE_BYTES, "صورة") if photo else photo
 
 
 class SurvivorReferralsForm(forms.ModelForm):
@@ -103,18 +169,6 @@ class SurvivorReferralsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _bootstrapify(self)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name, field in self.fields.items():
-            widget = field.widget
-            css = widget.attrs.get("class", "")
-            if isinstance(widget, (forms.CheckboxInput,)):
-                widget.attrs["class"] = (css + " form-check-input").strip()
-            elif isinstance(widget, (forms.Select,)):
-                widget.attrs["class"] = (css + " form-select").strip()
-            else:
-                widget.attrs["class"] = (css + " form-control").strip()
 
 
 class InformedConsentForm(forms.ModelForm):
@@ -276,6 +330,10 @@ class SupportingDocumentForm(forms.ModelForm):
                 widget.attrs["class"] = (css + " form-select").strip()
             else:
                 widget.attrs["class"] = (css + " form-control").strip()
+
+    def clean_file(self):
+        uploaded = self.cleaned_data.get("file")
+        return _validate_upload(uploaded, ALLOWED_DOC_EXTS, MAX_DOC_BYTES, "وثيقة")
 
 
 class MedicalAssessmentForm(forms.ModelForm):
@@ -498,9 +556,25 @@ class InterviewMediaForm(forms.ModelForm):
             else:
                 widget.attrs["class"] = (css + " form-control").strip()
 
+    def clean_file(self):
+        uploaded = self.cleaned_data.get("file")
+        media_type = self.cleaned_data.get("media_type")
+        # حدود مختلفة حسب نوع الوسيط
+        if media_type == "video":
+            max_bytes = MAX_VIDEO_BYTES
+        elif media_type == "audio":
+            max_bytes = MAX_AUDIO_BYTES
+        elif media_type == "photo":
+            max_bytes = MAX_IMAGE_BYTES
+        else:
+            max_bytes = MAX_DOC_BYTES
+        return _validate_upload(uploaded, ALLOWED_MEDIA_EXTS, max_bytes, "وسيط مقابلة")
+
 
 class JSONImportForm(forms.Form):
     """نموذج لاستيراد ملف JSON يحوي بيانات الناجين."""
+
+    MAX_FILE_BYTES = 100 * 1024 * 1024  # 100MB
 
     file = forms.FileField(
         label=_("ملف JSON"),
@@ -511,8 +585,55 @@ class JSONImportForm(forms.Form):
         label=_("استراتيجية الدمج"),
         choices=[
             ("skip_existing", _("تخطّي الملفات الموجودة (آمن)")),
-            ("update_existing", _("تحديث الملفات الموجودة (يطغى على الحالي)")),
+            ("update_existing", _("تحديث الملفات الموجودة - بسجل تدقيق")),
         ],
         initial="skip_existing",
         widget=forms.Select(attrs={"class": "form-select"}),
     )
+
+    def clean_file(self):
+        import json as _json
+        uploaded = self.cleaned_data["file"]
+        # 1. حجم
+        if uploaded.size > self.MAX_FILE_BYTES:
+            raise forms.ValidationError(
+                _("الملف أكبر من الحد المسموح (100 ميجا)."),
+            )
+        # 2. صيغة JSON صحيحة و list من dicts بشكل Django dumpdata
+        try:
+            uploaded.seek(0)
+            content = uploaded.read().decode("utf-8")
+            data = _json.loads(content)
+        except UnicodeDecodeError:
+            raise forms.ValidationError(_("الملف ليس UTF-8 صالحاً."))
+        except _json.JSONDecodeError as e:
+            raise forms.ValidationError(_("صيغة JSON غير صالحة: %(err)s") % {"err": str(e)})
+
+        if not isinstance(data, list):
+            raise forms.ValidationError(_("الملف يجب أن يكون قائمة (list) من السجلات."))
+
+        # 3. كل عنصر يجب أن يحوي model + pk + fields
+        allowed_models = {
+            "survivors.detentionfacility", "survivors.torturemethod",
+            "survivors.survivorprofile", "survivors.informedconsent",
+            "survivors.detentionevent", "survivors.detentionperiod",
+            "survivors.releaseevent", "survivors.witness",
+            "survivors.supportingdocument", "survivors.medicalassessment",
+            "survivors.longtermimpact", "survivors.survivornote",
+            "survivors.interview", "survivors.interviewmedia",
+            # AuditLog و ChainOfCustodyLog محمية - لا تُستورَد
+        }
+        for i, item in enumerate(data):
+            if not isinstance(item, dict) or "model" not in item or "fields" not in item:
+                raise forms.ValidationError(
+                    _("العنصر #%(i)d ليس بصيغة Django dumpdata.") % {"i": i + 1},
+                )
+            model = (item.get("model") or "").lower()
+            if model not in allowed_models:
+                raise forms.ValidationError(
+                    _("النموذج '%(m)s' غير مسموح للاستيراد (للحماية).")
+                    % {"m": item.get("model")},
+                )
+
+        uploaded.seek(0)
+        return uploaded

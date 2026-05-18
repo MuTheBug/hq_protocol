@@ -15,14 +15,25 @@
   <div class="card-body">
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
       <div class="mb-3">
         <label class="form-label">{{ form.file.label }}</label>
         {{ form.file }}
         <small class="text-muted d-block">{{ form.file.help_text }}</small>
+        {% if form.file.errors %}
+        <div class="alert alert-danger mt-2 mb-0">
+          {% for error in form.file.errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
       </div>
       <div class="mb-3">
         <label class="form-label">{{ form.merge_strategy.label }}</label>
         {{ form.merge_strategy }}
+        {% if form.merge_strategy.errors %}
+        <div class="text-danger small">{{ form.merge_strategy.errors }}</div>
+        {% endif %}
       </div>
       <button type="submit" class="btn btn-haqquna">
         <i class="bi bi-cloud-upload"></i> استيراد

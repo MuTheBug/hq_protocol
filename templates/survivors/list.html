@@ -113,7 +113,7 @@
       <td><small>{{ s.get_governorate_at_detention_display|default:"—" }}</small></td>
       <td><small>{{ s.get_occupation_category_display|default:"—" }}</small></td>
       <td><span class="badge badge-{{ s.file_classification|lower }}">{{ s.get_file_classification_display }}</span></td>
-      <td><strong class="text-haqquna">{{ s.overall_score }}/5</strong></td>
+      <td><strong class="{% if s.overall_score >= 4 %}text-success{% elif s.overall_score >= 2 %}text-warning{% else %}text-danger{% endif %}">{{ s.overall_score }}/5</strong></td>
       <td><small>{{ s.documenter.username|default:"—" }}</small></td>
       <td><small>{{ s.created_at|date:"Y-m-d" }}</small></td>
     </tr>

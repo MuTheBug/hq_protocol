@@ -147,6 +147,7 @@ def export_chooser(request):
     return render(request, "survivors/export_chooser.html", {
         "columns": AVAILABLE_COLUMNS,
         "default_columns": DEFAULT_COLUMNS,
+        "default_columns_json": json.dumps(DEFAULT_COLUMNS),
         "count": count,
         "querystring": request.GET.urlencode(),
     })
@@ -325,19 +326,32 @@ def import_json(request):
             uploaded = form.cleaned_data["file"]
             strategy = form.cleaned_data["merge_strategy"]
             try:
+                uploaded.seek(0)
                 content = uploaded.read().decode("utf-8")
                 created = 0
                 skipped = 0
                 updated = 0
+                update_log = []  # لتسجيل ما تم تعديله
                 with transaction.atomic():
                     for deserialized in deserialize("json", content):
                         obj = deserialized.object
                         model = type(obj)
+                        # حماية: لا نسمح أبداً باستيراد AuditLog أو ChainOfCustody
+                        model_label = f"{model._meta.app_label}.{model.__name__}"
+                        if model_label in ("accounts.AuditLog",
+                                           "survivors.ChainOfCustodyLog"):
+                            skipped += 1
+                            continue
                         # تحقّق من الوجود
-                        if model.objects.filter(pk=obj.pk).exists():
+                        if obj.pk and model.objects.filter(pk=obj.pk).exists():
                             if strategy == "skip_existing":
                                 skipped += 1
                                 continue
+                            # نسجل التحديث في AuditLog (قبل الاستبدال)
+                            existing = model.objects.get(pk=obj.pk)
+                            update_log.append(
+                                f"{model_label} pk={obj.pk}: استُبدل '{str(existing)[:80]}'"
+                            )
                             deserialized.save()
                             updated += 1
                         else:
@@ -346,9 +360,10 @@ def import_json(request):
 
                 AuditLog.objects.create(
                     user=request.user, action=AuditLog.Action.CREATE,
-                    target_model="Database",
-                    target_repr=f"استيراد JSON: {created} جديد، {updated} محدّث، {skipped} متخطّى",
+                    target_model="JSONImport",
+                    target_repr=f"استيراد: {created} جديد، {updated} محدّث، {skipped} متخطّى",
                     path=request.path, ip_address=request.META.get("REMOTE_ADDR"),
+                    notes=("\n".join(update_log))[:5000] if update_log else "",
                 )
                 messages.success(
                     request,
@@ -452,35 +467,58 @@ def transmit_chooser(request, pk):
     })
 
 
+def _sanitize_user_text(text, max_len=500):
+    """قص + إزالة الأحرف التحكمية - للحماية من حقن النصوص."""
+    if not text:
+        return ""
+    # إزالة أحرف التحكم (ما عدا newline و tab)
+    cleaned = "".join(
+        ch for ch in str(text)
+        if ch == "\n" or ch == "\t" or (ord(ch) >= 32 and ord(ch) != 127)
+    )
+    return cleaned[:max_len].strip()
+
+
 @login_required
 def transmit_package(request, pk):
-    """يولّد حزمة الإحالة: خطاب رسمي + ملف الناجي - جاهز للطباعة كـPDF."""
+    """يولّد حزمة الإحالة: خطاب رسمي + ملف الناجي - جاهز للطباعة كـPDF.
+
+    يستخدم transaction.atomic + select_for_update لإحكام التحقق من الموافقة
+    وتجنب سباق سحب الموافقة بين الفحص والإصدار.
+    """
+    from django.db import transaction
+
     survivor = get_object_or_404(SurvivorProfile, pk=pk)
-    recipient_code = request.GET.get("recipient")
+    recipient_code = request.GET.get("recipient", "")[:30]
     recipient = get_recipient(recipient_code)
     if not recipient:
         messages.error(request, "الجهة المستلمة غير معروفة.")
         return redirect("survivors:transmit_chooser", pk=pk)
 
-    consent = getattr(survivor, "consent", None)
-    allowed, reason = _check_consent_for_recipient(consent, recipient)
-    if not allowed:
-        messages.error(request, f"لا يمكن الإحالة: {reason}")
-        return redirect("survivors:transmit_chooser", pk=pk)
+    # نتحقق من الموافقة داخل transaction مع قفل سجل الموافقة
+    with transaction.atomic():
+        consent = (
+            InformedConsent.objects.select_for_update()
+            .filter(survivor=survivor).first()
+        )
+        allowed, reason = _check_consent_for_recipient(consent, recipient)
+        if not allowed:
+            messages.error(request, f"لا يمكن الإحالة: {reason}")
+            return redirect("survivors:transmit_chooser", pk=pk)
 
-    # ملاحظات اختيارية يكتبها المستخدم
-    transmission_note = request.GET.get("note", "").strip()
-    reference_number = (
-        f"HQ-TX-{survivor.case_reference}-{recipient_code.upper()}-{datetime.now():%Y%m%d}"
-    )
+        # ملاحظات اختيارية - مُطهّرة
+        transmission_note = _sanitize_user_text(request.GET.get("note", ""))
+        reference_number = (
+            f"HQ-TX-{survivor.case_reference}-{recipient_code.upper()}-{datetime.now():%Y%m%d}"
+        )
 
-    AuditLog.objects.create(
-        user=request.user, action=AuditLog.Action.EXPORT,
-        target_model="SurvivorProfile", target_id=str(survivor.pk),
-        target_repr=f"إحالة {survivor.case_reference} → {recipient['name_en']}",
-        path=request.path, ip_address=request.META.get("REMOTE_ADDR"),
-        notes=f"reference={reference_number}, recipient={recipient_code}, note={transmission_note}",
-    )
+        AuditLog.objects.create(
+            user=request.user, action=AuditLog.Action.EXPORT,
+            target_model="SurvivorProfile", target_id=str(survivor.pk),
+            target_repr=f"إحالة {survivor.case_reference} → {recipient['name_en']}",
+            path=request.path, ip_address=request.META.get("REMOTE_ADDR"),
+            notes=f"reference={reference_number} | recipient={recipient_code} | note={transmission_note[:200]}",
+        )
 
     return render(request, "survivors/transmit_package.html", {
         "survivor": survivor,

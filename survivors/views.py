@@ -108,22 +108,12 @@ def _apply_survivor_filters(qs, cleaned):
             _sum=F("reliability_score") + F("corroboration_score") + F("completeness_score")
         ).filter(_sum__gte=threshold)
 
-    # موافقات
+    # موافقات - نستخدم Q موحّد مع is_fully_compliant property
     has_consent = cleaned.get("has_consent")
     if has_consent == "yes":
-        qs = qs.filter(
-            consent__consent_documented=True,
-            consent__withdrawal_right_explained=True,
-            consent__confidentiality_limits_explained=True,
-            consent__intended_uses_explained=True,
-            consent__consent_withdrawn=False,
-        )
+        qs = qs.filter(InformedConsent.fully_compliant_q())
     elif has_consent == "no":
-        qs = qs.filter(
-            Q(consent__isnull=True)
-            | Q(consent__consent_documented=False)
-            | Q(consent__consent_withdrawn=True)
-        )
+        qs = qs.exclude(InformedConsent.fully_compliant_q())
 
     if cleaned.get("consent_iiim") == "yes":
         qs = qs.filter(consent__share_with_iiim=True)
@@ -201,14 +191,17 @@ def survivor_list(request):
 def survivor_detail(request, pk):
     survivor = get_object_or_404(SurvivorProfile, pk=pk)
     _log_action(request, AuditLog.Action.VIEW, survivor)
-    # نُحدّث الدرجات عند كل اطلاع لتعكس البيانات الحالية
-    survivor.recompute_scores(save=True)
-    survivor.refresh_from_db()
+    # الدرجات تُحدَّث آلياً عبر signals عند كل تغيير في الأدلة.
+    # لا نُعيد الاحتساب هنا تجنباً لاستعلامات مكلفة على كل عرض.
 
     # فلترة الملاحظات حسب صلاحية الوصول للسرّية
-    notes_qs = survivor.notes.select_related("author")
+    all_notes = survivor.notes.select_related("author")
+    hidden_confidential_count = 0
     if not (request.user.is_superuser or request.user.can_view_sensitive):
-        notes_qs = notes_qs.filter(is_confidential=False)
+        hidden_confidential_count = all_notes.filter(is_confidential=True).count()
+        notes_qs = all_notes.filter(is_confidential=False)
+    else:
+        notes_qs = all_notes
 
     return render(request, "survivors/detail.html", {
         "survivor": survivor,
@@ -221,6 +214,7 @@ def survivor_detail(request, pk):
         "documents": survivor.documents.all(),
         "medical_assessments": survivor.medical_assessments.all(),
         "notes": notes_qs,
+        "hidden_confidential_count": hidden_confidential_count,
         "interviews": survivor.interviews.prefetch_related("media").all(),
         "breakdowns": survivor.all_breakdowns(),
     })
@@ -648,3 +642,68 @@ def referrals_edit(request, pk):
         request, pk, SurvivorReferralsForm,
         _("الإحالات الطبية والنفسية والقانونية"),
     )
+
+
+# ============================================================
+# الأرشفة الآمنة (بديل الحذف النهائي)
+# ============================================================
+
+@login_required
+def survivor_archive(request, pk):
+    """أرشفة ملف ناجٍ - لا تحذف البيانات، فقط تُخفيها من القوائم العامة."""
+    if not (request.user.is_superuser or request.user.role in {"admin", "supervisor"}):
+        return HttpResponseForbidden(_("الأرشفة تتطلب صلاحية مشرف."))
+
+    # نستخدم all_objects للوصول حتى للمؤرشف (للإلغاء)
+    survivor = get_object_or_404(SurvivorProfile.all_objects, pk=pk)
+
+    if request.method == "POST":
+        from django.utils import timezone
+        reason = request.POST.get("reason", "").strip()[:1000]
+        survivor.is_archived = True
+        survivor.archived_at = timezone.now()
+        survivor.archived_by = request.user
+        survivor.archive_reason = reason
+        survivor.save(update_fields=[
+            "is_archived", "archived_at", "archived_by", "archive_reason",
+        ])
+        _log_action(request, AuditLog.Action.DELETE, survivor)
+        messages.success(
+            request,
+            _("تم أرشفة الملف %(ref)s. البيانات محفوظة ويمكن استعادتها لاحقاً.")
+            % {"ref": survivor.case_reference},
+        )
+        return redirect("survivors:list")
+
+    return render(request, "survivors/archive_confirm.html", {"survivor": survivor})
+
+
+@login_required
+def survivor_unarchive(request, pk):
+    """استعادة ملف ناجٍ مؤرشف."""
+    if not (request.user.is_superuser or request.user.role == "admin"):
+        return HttpResponseForbidden(_("الاستعادة تتطلب صلاحية مدير."))
+    survivor = get_object_or_404(SurvivorProfile.all_objects, pk=pk)
+    survivor.is_archived = False
+    survivor.archived_at = None
+    survivor.archive_reason = ""
+    survivor.save(update_fields=["is_archived", "archived_at", "archive_reason"])
+    _log_action(request, AuditLog.Action.UPDATE, survivor)
+    messages.success(
+        request,
+        _("تم استعادة الملف %(ref)s.") % {"ref": survivor.case_reference},
+    )
+    return redirect("survivors:detail", pk=survivor.pk)
+
+
+@login_required
+def survivor_archive_list(request):
+    """قائمة الملفات المؤرشفة - للأدمن والمشرفين فقط."""
+    if not (request.user.is_superuser or request.user.role in {"admin", "supervisor"}):
+        return HttpResponseForbidden()
+    archived = SurvivorProfile.all_objects.filter(is_archived=True).select_related(
+        "documenter", "archived_by",
+    ).order_by("-archived_at")
+    return render(request, "survivors/archive_list.html", {
+        "survivors": archived, "total": archived.count(),
+    })

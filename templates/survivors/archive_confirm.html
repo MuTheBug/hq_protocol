@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}أرشفة ملف {{ survivor.case_reference }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header bg-warning"><i class="bi bi-archive"></i> أرشفة ملف الناجي</div>
+  <div class="card-body">
+    <div class="alert alert-info">
+      <strong>الأرشفة ≠ الحذف.</strong>
+      ملفات الناجين تُحفظ كاملةً (مع كل الأدلة والشهادات) للأرشيف القضائي
+      وفق متطلبات IIIM/ICC. الملف المؤرشف:
+      <ul class="mb-0 mt-2">
+        <li>يختفي من القائمة العامة وكل التقارير</li>
+        <li>لا يظهر في الإحصاءات الافتراضية</li>
+        <li>يبقى محفوظاً ويمكن استعادته بقرار مدير</li>
+        <li>لا يمكن مشاركته مع الجهات الخارجية أثناء الأرشفة</li>
+      </ul>
+    </div>
+
+    <p><strong>الملف:</strong> {{ survivor.case_reference }} - {{ survivor.full_name }}</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label">سبب الأرشفة (إجباري للتدقيق)</label>
+        <textarea name="reason" rows="4" class="form-control" required minlength="20"
+          placeholder="مثال: انسحاب الناجي من التوثيق، طلب من العائلة، خطأ في الإدخال..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-warning">
+        <i class="bi bi-archive-fill"></i> تأكيد الأرشفة
+      </button>
+      <a href="{% url 'survivors:detail' survivor.pk %}" class="btn btn-secondary">إلغاء</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

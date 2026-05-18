@@ -84,8 +84,11 @@
             {% if m.part_number > 1 %}<small class="text-muted">جزء {{ m.part_number }}</small>{% endif %}
           </div>
           <div>
+            {% if m.file_size_bytes %}
+              <small class="text-muted">{{ m.file_size_bytes|filesizeformat }}</small>
+            {% endif %}
             {% if m.duration_seconds %}
-              <small class="text-muted">{{ m.duration_seconds }} ث</small>
+              <small class="text-muted"> · {{ m.duration_seconds }} ث</small>
             {% endif %}
             <a href="{{ m.file.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">
               <i class="bi bi-download"></i> تنزيل

@@ -40,6 +40,11 @@
         <a href="{% url 'survivors:transmit_chooser' survivor.pk %}" class="btn btn-sm btn-success mt-1">
           <i class="bi bi-send"></i> إحالة لجهة خارجية
         </a>
+        {% if user.is_superuser or user.role == 'admin' or user.role == 'supervisor' %}
+        <a href="{% url 'survivors:archive' survivor.pk %}" class="btn btn-sm btn-outline-warning mt-1">
+          <i class="bi bi-archive"></i> أرشفة
+        </a>
+        {% endif %}
         <br>
         <small class="text-muted">
           الدرجة الإجمالية:
@@ -155,19 +160,27 @@
     <div class="card-body">
       <div class="row text-center mb-2">
         <div class="col">
-          <div class="stat-value">{{ survivor.reliability_score }}/5</div>
+          <div class="stat-value {% if survivor.reliability_score >= 4 %}text-success{% elif survivor.reliability_score >= 2 %}text-warning{% else %}text-danger{% endif %}">
+            {{ survivor.reliability_score }}/5
+          </div>
           <small>الموثوقية</small>
         </div>
         <div class="col">
-          <div class="stat-value">{{ survivor.corroboration_score }}/5</div>
+          <div class="stat-value {% if survivor.corroboration_score >= 4 %}text-success{% elif survivor.corroboration_score >= 2 %}text-warning{% else %}text-danger{% endif %}">
+            {{ survivor.corroboration_score }}/5
+          </div>
           <small>التحقق المتقاطع</small>
         </div>
         <div class="col">
-          <div class="stat-value">{{ survivor.completeness_score }}/5</div>
+          <div class="stat-value {% if survivor.completeness_score >= 4 %}text-success{% elif survivor.completeness_score >= 2 %}text-warning{% else %}text-danger{% endif %}">
+            {{ survivor.completeness_score }}/5
+          </div>
           <small>الاكتمال</small>
         </div>
         <div class="col">
-          <div class="stat-value text-success">{{ survivor.overall_score }}/5</div>
+          <div class="stat-value {% if survivor.overall_score >= 4 %}text-success{% elif survivor.overall_score >= 2 %}text-warning{% else %}text-danger{% endif %}">
+            {{ survivor.overall_score }}/5
+          </div>
           <small>الإجمالي</small>
         </div>
       </div>
@@ -541,6 +554,12 @@
       </a>
     </div>
     <div class="card-body">
+      {% if hidden_confidential_count %}
+      <div class="alert alert-secondary mb-2">
+        <i class="bi bi-shield-lock-fill"></i>
+        <strong>{{ hidden_confidential_count }}</strong> ملاحظة سرّية مخفية - متاحة للمشرفين وضباط الحماية فقط.
+      </div>
+      {% endif %}
       {% for n in notes %}
       <div class="timeline-item {% if n.is_pinned %}border-warning{% endif %}">
         <div class="d-flex justify-content-between">

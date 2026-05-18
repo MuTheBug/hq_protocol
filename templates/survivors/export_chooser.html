@@ -59,12 +59,21 @@
 </form>
 
 <script>
+const DEFAULT_COLUMNS = {{ default_columns_json|safe }};
+const TOTAL_RECORDS = {{ count }};
+
 function selectAll(on) {
+  if (on && TOTAL_RECORDS > 500) {
+    const cols = document.querySelectorAll('.column-cb').length;
+    if (!confirm(`ستُصدّر ${TOTAL_RECORDS} ملف بـ${cols} عمود. قد يستغرق وقتاً وحجم الملف كبير. متابعة؟`)) {
+      return;
+    }
+  }
   document.querySelectorAll('.column-cb').forEach(c => c.checked = on);
 }
 function selectDefault() {
-  selectAll(false);
-  ['case_reference','full_name','gender','governorate_at_detention','classification','overall_score','first_detention_date','release_date'].forEach(k => {
+  document.querySelectorAll('.column-cb').forEach(c => c.checked = false);
+  DEFAULT_COLUMNS.forEach(k => {
     const cb = document.getElementById('col_' + k);
     if (cb) cb.checked = true;
   });
@@ -73,6 +82,10 @@ function submitWithFormat(fmt) {
   const f = document.getElementById('exportForm');
   // Build columns parameter
   const selected = Array.from(document.querySelectorAll('.column-cb:checked')).map(c => c.value);
+  if (selected.length === 0) {
+    alert('اختر عموداً واحداً على الأقل قبل التصدير.');
+    return;
+  }
   // Remove old columns input if any
   Array.from(f.querySelectorAll('input[name="columns"]')).forEach(i => i.remove());
   const inp = document.createElement('input');

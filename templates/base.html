@@ -91,6 +91,8 @@
         {% if user.can_review or user.is_superuser %}
         <li class="nav-item"><a class="nav-link" href="{% url 'accounts:audit_log' %}">
           <i class="bi bi-shield-check"></i> سجل التدقيق</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'survivors:archive_list' %}">
+          <i class="bi bi-archive"></i> الأرشيف</a></li>
         {% endif %}
         <li class="nav-item"><a class="nav-link" href="/admin/">
           <i class="bi bi-gear"></i> إدارة النظام</a></li>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}الملفات المؤرشفة{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="text-haqquna">
+    <i class="bi bi-archive"></i> الملفات المؤرشفة <small class="text-muted">({{ total }})</small>
+  </h3>
+  <a href="{% url 'survivors:list' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-right"></i> الملفات النشطة
+  </a>
+</div>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle"></i>
+  الملفات هنا لا تظهر في القوائم والإحصاءات العامة. البيانات محفوظة بالكامل.
+</div>
+
+<div class="card">
+<table class="table table-haqquna table-hover mb-0">
+  <thead>
+    <tr>
+      <th>المرجع</th>
+      <th>الاسم</th>
+      <th>أرشفها</th>
+      <th>تاريخ الأرشفة</th>
+      <th>السبب</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in survivors %}
+    <tr>
+      <td><strong>{{ s.case_reference }}</strong></td>
+      <td>{{ s.full_name }}</td>
+      <td><small>{{ s.archived_by.username|default:"—" }}</small></td>
+      <td><small>{{ s.archived_at|date:"Y-m-d H:i" }}</small></td>
+      <td><small>{{ s.archive_reason|truncatechars:80 }}</small></td>
+      <td>
+        {% if user.is_superuser or user.role == 'admin' %}
+        <a href="{% url 'survivors:unarchive' s.pk %}" class="btn btn-sm btn-outline-success"
+           onclick="return confirm('استعادة الملف للقائمة النشطة؟')">
+          <i class="bi bi-arrow-counterclockwise"></i> استعادة
+        </a>
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-center p-4 text-muted">لا يوجد ملفات مؤرشفة.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

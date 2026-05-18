@@ -96,8 +96,19 @@ class TortureMethod(models.Model):
 # ٢. الملف الرئيسي للناجي (Survivor Profile)
 # ============================================================
 
+class ActiveSurvivorManager(models.Manager):
+    """مدير افتراضي يستبعد الملفات المؤرشفة (لكن يحتفظ بها في DB)."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_archived=False)
+
+
 class SurvivorProfile(models.Model):
     """ملف ناجٍ مُفرج عنه. النظام مخصص للناجين فقط (لا مفقودين ولا متوفين)."""
+
+    # objects = الملفات النشطة فقط · all_objects = شاملاً المؤرشفة (للأدمن)
+    objects = ActiveSurvivorManager()
+    all_objects = models.Manager()
 
     class Gender(models.TextChoices):
         MALE = "male", _("ذكر")
@@ -132,6 +143,7 @@ class SurvivorProfile(models.Model):
 
     national_id = models.CharField(
         _("الرقم الوطني السوري"), max_length=20, blank=True, db_index=True,
+        help_text=_("11 رقم. يُسمح بالفراغ لكن إذا أُدخل، يجب أن يكون فريداً."),
     )
     birth_date = models.DateField(_("تاريخ الميلاد"), null=True, blank=True)
     birth_date_approximate = models.BooleanField(
@@ -221,7 +233,20 @@ class SurvivorProfile(models.Model):
     documenter = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name="documented_survivors", verbose_name=_("الموثّق المسؤول"),
+        db_index=True,
     )
+
+    # ---- الأرشفة (Soft-delete) - مطلب IIIM/ICC لحفظ الأدلة ----
+    is_archived = models.BooleanField(
+        _("مؤرشف"), default=False, db_index=True,
+        help_text=_("بدلاً من الحذف النهائي، نُؤرشف الملفات لحفظ الأدلة"),
+    )
+    archived_at = models.DateTimeField(_("تاريخ الأرشفة"), null=True, blank=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="archived_survivors", verbose_name=_("أرشفه"),
+    )
+    archive_reason = models.TextField(_("سبب الأرشفة"), blank=True)
 
     # ---- الإحالة الطبية والنفسية ----
     medical_referral_offered = models.BooleanField(
@@ -362,6 +387,22 @@ class SurvivorProfile(models.Model):
         if hasattr(self, "release_event"):
             score += 1
         return min(score, 5)
+
+    def clean(self):
+        """التحقق من فرادة الرقم الوطني (مع السماح بالفراغ)."""
+        from django.core.exceptions import ValidationError
+        super().clean()
+        if self.national_id:
+            duplicate = type(self).all_objects.filter(
+                national_id=self.national_id,
+            ).exclude(pk=self.pk).first()
+            if duplicate:
+                raise ValidationError({
+                    "national_id": _(
+                        "هذا الرقم الوطني مُستخدَم في الملف %(ref)s. "
+                        "إذا كان نفس الشخص، عدّل الملف القائم بدل إنشاء جديد."
+                    ) % {"ref": duplicate.case_reference},
+                })
 
     def recompute_scores(self, save=True):
         """يحدّث الدرجات الثلاث (يُستدعى من signals تلقائياً)."""
@@ -530,6 +571,18 @@ class InformedConsent(models.Model):
     def __str__(self):
         return f"موافقة {self.survivor.case_reference}"
 
+    # شرط Q موحّد - يُستخدم في الـviews لفلترة Survivors بموافقات مكتملة
+    @staticmethod
+    def fully_compliant_q():
+        from django.db.models import Q
+        return Q(
+            consent__consent_documented=True,
+            consent__withdrawal_right_explained=True,
+            consent__confidentiality_limits_explained=True,
+            consent__intended_uses_explained=True,
+            consent__consent_withdrawn=False,
+        )
+
     @property
     def is_fully_compliant(self):
         return all([
@@ -594,6 +647,7 @@ class DetentionPeriod(models.Model):
     facility = models.ForeignKey(
         DetentionFacility, on_delete=models.PROTECT,
         related_name="detention_periods", verbose_name=_("مركز الاحتجاز"),
+        db_index=True,
     )
     from_date = models.DateField(_("من تاريخ"))
     from_date_approximate = models.BooleanField(_("التاريخ تقريبي"), default=False)
@@ -779,7 +833,9 @@ class Witness(models.Model):
 # ============================================================
 
 def document_upload_path(instance, filename):
-    return f"survivors/documents/{instance.survivor.case_reference}/{filename}"
+    # UUID prefix لمنع التصادمات + الحفاظ على اسم الملف الأصلي للتعرّف
+    prefix = uuid.uuid4().hex[:8]
+    return f"survivors/documents/{instance.survivor.case_reference}/{prefix}_{filename}"
 
 
 class SupportingDocument(models.Model):
@@ -808,6 +864,7 @@ class SupportingDocument(models.Model):
     )
     document_type = models.CharField(
         _("نوع الوثيقة"), max_length=30, choices=DocumentType.choices,
+        db_index=True,
     )
     title = models.CharField(_("عنوان الوثيقة"), max_length=300)
     description = models.TextField(_("الوصف والمحتوى"))
@@ -956,9 +1013,21 @@ class MedicalAssessment(models.Model):
     depression_indicators = models.BooleanField(_("علامات اكتئاب"), default=False)
     anxiety_indicators = models.BooleanField(_("علامات قلق"), default=False)
 
-    consistency_with_account = models.TextField(
-        _("مدى توافق النتائج مع رواية الناجي"), blank=True,
-        help_text=_("بمصطلحات بروتوكول إسطنبول: highly consistent / consistent / typical / not consistent"),
+    class Consistency(models.TextChoices):
+        NOT_ASSESSED = "not_assessed", _("لم يُقَيَّم")
+        NOT_CONSISTENT = "not_consistent", _("غير متوافق")
+        CONSISTENT = "consistent", _("متوافق")
+        HIGHLY_CONSISTENT = "highly_consistent", _("متوافق بدرجة عالية")
+        TYPICAL = "typical", _("نمطي/مطابق تماماً")
+        DIAGNOSTIC = "diagnostic", _("تشخيصي - دليل قاطع")
+
+    consistency_with_account = models.CharField(
+        _("مدى توافق النتائج مع رواية الناجي"), max_length=30,
+        choices=Consistency.choices, default=Consistency.NOT_ASSESSED,
+        help_text=_("التصنيف الإسطنبولي القياسي لمصداقية الإصابات"),
+    )
+    consistency_notes = models.TextField(
+        _("ملاحظات على التوافق"), blank=True,
     )
 
     report_file = models.FileField(

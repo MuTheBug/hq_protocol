@@ -94,15 +94,25 @@ class HaqqunaTour {
       </div>
     `;
 
-    // موضع الـtooltip
+    // موضع الـtooltip - يحترم RTL
     if (rect) {
       const tipW = 320;
       const top = rect.bottom + 14;
+      const isRTL = getComputedStyle(document.body).direction === 'rtl';
       let left = rect.left + (rect.width / 2) - (tipW / 2);
-      left = Math.max(20, Math.min(left, window.innerWidth - tipW - 20));
+      // في RTL: clamp إلى الحد الأيمن أيضاً
+      const minLeft = 20;
+      const maxLeft = window.innerWidth - tipW - 20;
+      left = Math.max(minLeft, Math.min(left, maxLeft));
+      // إذا كان الـtooltip سيخرج من الأسفل، ضعه فوق الـtarget
+      const tipH = 200; // تقدير
+      let actualTop = top;
+      if (top + tipH > window.innerHeight - 20) {
+        actualTop = Math.max(20, rect.top - tipH - 14);
+      }
       Object.assign(this.tooltip.style, {
         position: 'fixed',
-        top: top + 'px',
+        top: actualTop + 'px',
         left: left + 'px',
         width: tipW + 'px',
         display: 'block',
