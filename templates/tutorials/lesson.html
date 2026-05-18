@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} - دروس حقّنا{% endblock %}
+
+{% block content %}
+<nav class="mb-2">
+  <a href="{% url 'tutorials:home' %}" class="text-decoration-none">
+    <i class="bi bi-arrow-right"></i> كل الدروس
+  </a>
+</nav>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <span class="badge bg-haqquna">الدرس {{ lesson.order }}</span>
+        <span class="badge bg-light text-dark">{{ lesson.category }}</span>
+        <span class="badge bg-light text-dark">{{ lesson.level }}</span>
+        <span class="badge bg-light text-dark"><i class="bi bi-clock"></i> {{ lesson.duration }} د</span>
+      </div>
+      {% if progress.is_completed %}
+      <span class="badge bg-success fs-6">
+        <i class="bi bi-check-circle-fill"></i> مكتمل
+      </span>
+      {% endif %}
+    </div>
+    <h2 class="text-haqquna mt-2">
+      <i class="{{ lesson.icon }}"></i> {{ lesson.title }}
+    </h2>
+    <p class="text-muted">{{ lesson.description }}</p>
+  </div>
+</div>
+
+<!-- الأهداف التعليمية -->
+<div class="card mb-3">
+  <div class="card-header bg-haqquna text-white">
+    <i class="bi bi-bullseye"></i> ماذا ستتعلّم في هذا الدرس؟
+  </div>
+  <div class="card-body">
+    <ul class="mb-0">
+      {% for obj in lesson.objectives %}
+      <li>{{ obj }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<!-- محتوى الدرس -->
+<div class="card mb-3">
+  <div class="card-body">
+    {% include lesson.content_template %}
+  </div>
+</div>
+
+<!-- الجولة التفاعلية -->
+{% if lesson.tour %}
+<div class="card mb-3 border-haqquna">
+  <div class="card-body text-center">
+    <h5 class="text-haqquna"><i class="bi bi-cursor"></i> جولة تفاعلية على النظام</h5>
+    <p class="text-muted">
+      جرّب الآن! اضغط الزر أدناه وستنتقل لصفحة حقيقية في النظام مع تلميحات تشرح كل عنصر.
+    </p>
+    <a href="{{ lesson.tour.page }}?tour={{ lesson.id }}" class="btn btn-haqquna btn-lg" target="_blank">
+      <i class="bi bi-rocket-takeoff"></i> ابدأ الجولة التفاعلية
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- الاختبار -->
+{% if lesson.quiz %}
+<div class="card mb-3 border-haqquna">
+  <div class="card-header bg-haqquna text-white">
+    <i class="bi bi-question-circle-fill"></i>
+    اختبار قصير ({{ lesson.quiz|length }} أسئلة - تحتاج 60% للنجاح)
+  </div>
+  <div class="card-body" id="quizContainer">
+    <form id="quizForm">
+      {% for q in lesson.quiz %}
+      <div class="quiz-question mb-3 p-3 border rounded" data-qindex="{{ forloop.counter0 }}">
+        <h6>س{{ forloop.counter }}: {{ q.question }}</h6>
+        {% for opt in q.options %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio"
+                 name="q{{ forloop.parentloop.counter0 }}"
+                 value="{{ forloop.counter0 }}"
+                 id="q{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}">
+          <label class="form-check-label" for="q{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}">
+            {{ opt }}
+          </label>
+        </div>
+        {% endfor %}
+        <div class="quiz-feedback mt-2" style="display:none;"></div>
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-haqquna btn-lg">
+        <i class="bi bi-check2-square"></i> تقديم الإجابات
+      </button>
+    </form>
+
+    <div id="quizResult" class="mt-3" style="display:none;"></div>
+  </div>
+</div>
+{% endif %}
+
+<!-- التنقل بين الدروس -->
+<div class="d-flex justify-content-between mt-4 mb-4">
+  {% if prev_lesson %}
+  <a href="{% url 'tutorials:lesson' prev_lesson.id %}" class="btn btn-outline-secondary">
+    → <i class="{{ prev_lesson.icon }}"></i> {{ prev_lesson.title }}
+  </a>
+  {% else %}
+  <span></span>
+  {% endif %}
+  {% if next_lesson %}
+  <a href="{% url 'tutorials:lesson' next_lesson.id %}" class="btn btn-outline-haqquna">
+    {{ next_lesson.title }} <i class="{{ next_lesson.icon }}"></i> ←
+  </a>
+  {% else %}
+  <a href="{% url 'tutorials:home' %}" class="btn btn-success">
+    <i class="bi bi-trophy"></i> أكملت كل الدروس!
+  </a>
+  {% endif %}
+</div>
+
+{% csrf_token %}
+<script>
+(function() {
+  const lessonData = {{ lesson_json|safe }};
+  const form = document.getElementById('quizForm');
+  if (!form) return;
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const answers = [];
+    let allAnswered = true;
+    for (let i = 0; i < lessonData.quiz.length; i++) {
+      const checked = document.querySelector(`input[name="q${i}"]:checked`);
+      if (!checked) { allAnswered = false; break; }
+      answers.push(parseInt(checked.value));
+    }
+    if (!allAnswered) {
+      alert('أجب على كل الأسئلة قبل التقديم.');
+      return;
+    }
+    const r = await fetch(`/tutorials/lesson/${lessonData.id}/submit/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+      body: JSON.stringify({answers}),
+    });
+    const data = await r.json();
+
+    // اعرض النتيجة على كل سؤال
+    data.results.forEach((res, i) => {
+      const qDiv = document.querySelector(`[data-qindex="${i}"]`);
+      const feedback = qDiv.querySelector('.quiz-feedback');
+      feedback.style.display = 'block';
+      if (res.correct) {
+        feedback.className = 'quiz-feedback mt-2 alert alert-success';
+        feedback.innerHTML = '<i class="bi bi-check-circle"></i> صحيح! ' + res.explanation;
+      } else {
+        feedback.className = 'quiz-feedback mt-2 alert alert-danger';
+        feedback.innerHTML = '<i class="bi bi-x-circle"></i> الإجابة الصحيحة كانت رقم ' + (res.correct_answer + 1) + '. ' + res.explanation;
+      }
+    });
+
+    const result = document.getElementById('quizResult');
+    result.style.display = 'block';
+    if (data.passed) {
+      result.className = 'mt-3 alert alert-success';
+      result.innerHTML = `<h5><i class="bi bi-trophy-fill"></i> نجحت! ${data.score}/${data.max} (${data.percent}%)</h5>
+        <p>الدرس مُعتبَر مكتملاً. يمكنك الانتقال للدرس التالي.</p>`;
+    } else {
+      result.className = 'mt-3 alert alert-warning';
+      result.innerHTML = `<h5><i class="bi bi-exclamation-circle"></i> النتيجة: ${data.score}/${data.max} (${data.percent}%)</h5>
+        <p>راجع المحتوى وحاول مرة أخرى (تحتاج 60% للنجاح).</p>`;
+    }
+  });
+})();
+</script>
+{% endblock %}
