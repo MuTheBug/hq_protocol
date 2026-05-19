@@ -140,3 +140,9 @@ def tour_data(request, lesson_id):
     if not data or not data.get("tour"):
         return JsonResponse({"steps": []})
     return JsonResponse(data["tour"])
+
+
+@login_required
+def full_course(request):
+    """الدورة التدريبية الشاملة - 12 وحدة احترافية."""
+    return render(request, "tutorials/full_course.html")

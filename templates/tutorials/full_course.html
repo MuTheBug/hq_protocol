@@ -1,0 +1,2287 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الدورة التدريبية الشاملة - نظام حقّنا لتوثيق الناجين</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --hq-primary: #1c6b85;
+  --hq-accent: #4fbfd6;
+  --hq-dark: #0e3d4d;
+  --hq-light: #e8f4f8;
+  --hq-cream: #fdfbf7;
+  --hq-warning: #ffc107;
+  --hq-danger: #dc3545;
+  --hq-success: #198754;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background: #f6f8fa;
+  color: #222;
+  margin: 0;
+  line-height: 1.7;
+  font-size: 11pt;
+}
+
+/* ============ شريط التنقل العائم ============ */
+.course-nav {
+  position: fixed; top: 0; right: 0; left: 0;
+  background: linear-gradient(135deg, var(--hq-dark), var(--hq-primary));
+  color: white; padding: 8px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  z-index: 1000;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.course-nav .brand { font-weight: 700; font-size: 1rem; }
+.course-nav .controls { display: flex; gap: 6px; align-items: center; }
+.course-nav button {
+  background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;
+  font-size: 0.85rem;
+}
+.course-nav button:hover { background: rgba(255,255,255,0.25); }
+.course-nav select {
+  background: rgba(255,255,255,0.95); color: var(--hq-dark);
+  border: none; padding: 4px 8px; border-radius: 4px; font-family: inherit;
+  font-size: 0.85rem; max-width: 280px;
+}
+
+/* ============ الصفحات ============ */
+.page {
+  max-width: 1100px; margin: 30px auto;
+  background: white; padding: 50px 60px;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+  border-radius: 8px;
+  page-break-after: always;
+}
+
+/* ============ صفحة الغلاف ============ */
+.cover-page {
+  min-height: 90vh;
+  background: linear-gradient(135deg, var(--hq-dark) 0%, var(--hq-primary) 50%, var(--hq-accent) 100%);
+  color: white;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 60px;
+  border-radius: 12px; margin-top: 60px;
+}
+.cover-page img { height: 140px; background: white; padding: 10px; border-radius: 12px; margin-bottom: 30px; }
+.cover-page h1 { font-size: 2.8rem; font-weight: 900; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+.cover-page h2 { font-size: 1.6rem; font-weight: 400; margin: 15px 0; opacity: 0.95; }
+.cover-page .tagline { font-size: 1.1rem; opacity: 0.9; margin: 30px 0; max-width: 700px; line-height: 1.8; }
+.cover-page .meta { margin-top: 40px; font-size: 0.95rem; opacity: 0.85; }
+.cover-page .badge-cover {
+  display: inline-block; background: rgba(255,255,255,0.2);
+  padding: 8px 20px; border-radius: 30px; margin: 5px;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* ============ عناوين ============ */
+h1, h2, h3, h4 { color: var(--hq-dark); margin-top: 0; }
+.module-title {
+  font-size: 2.2rem; color: var(--hq-primary);
+  border-bottom: 4px solid var(--hq-accent);
+  padding-bottom: 15px; margin-bottom: 20px;
+}
+.module-number {
+  display: inline-block; background: var(--hq-primary); color: white;
+  padding: 6px 16px; border-radius: 20px; font-size: 0.9rem; margin-bottom: 15px;
+}
+.lesson-title {
+  font-size: 1.6rem; color: var(--hq-primary);
+  border-right: 6px solid var(--hq-accent);
+  padding-right: 15px; margin: 30px 0 15px 0;
+}
+.lesson-number {
+  display: inline-block; background: var(--hq-accent); color: white;
+  padding: 2px 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;
+}
+
+/* ============ المحتوى ============ */
+p { text-align: justify; margin: 10px 0; }
+ul, ol { padding-right: 25px; }
+ul li, ol li { margin: 6px 0; }
+
+/* الصناديق المميزة */
+.callout {
+  border-right: 4px solid; padding: 12px 18px; border-radius: 0 8px 8px 0;
+  margin: 15px 0; background: var(--hq-cream);
+}
+.callout-info { border-color: var(--hq-primary); background: var(--hq-light); }
+.callout-warning { border-color: var(--hq-warning); background: #fff8e1; }
+.callout-danger { border-color: var(--hq-danger); background: #ffeaea; }
+.callout-success { border-color: var(--hq-success); background: #e6f7ed; }
+.callout-title { font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+
+.objectives {
+  background: var(--hq-light); padding: 20px; border-radius: 8px;
+  margin: 20px 0; border: 1px solid var(--hq-accent);
+}
+.objectives h4 { color: var(--hq-primary); margin: 0 0 10px 0; }
+.objectives ul { margin: 0; }
+
+.example {
+  background: #fafafa; border: 2px dashed #ccc;
+  padding: 15px; border-radius: 8px; margin: 15px 0;
+}
+.example-label {
+  display: inline-block; background: #6c757d; color: white;
+  padding: 2px 10px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 8px;
+}
+
+table {
+  width: 100%; border-collapse: collapse; margin: 15px 0;
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+th { background: var(--hq-primary); color: white; padding: 10px; text-align: right; font-weight: 600; }
+td { padding: 10px; border-bottom: 1px solid #eee; text-align: right; }
+tr:nth-child(even) { background: #f9f9f9; }
+
+code {
+  background: #f4f4f4; padding: 2px 6px; border-radius: 3px;
+  font-family: 'Courier New', monospace; font-size: 0.9em; color: var(--hq-dark);
+}
+pre {
+  background: #2d2d2d; color: #f8f8f2; padding: 15px;
+  border-radius: 6px; overflow-x: auto; direction: ltr; text-align: left;
+}
+pre code { background: transparent; color: inherit; }
+
+.step-card {
+  display: flex; align-items: flex-start; gap: 15px; margin: 12px 0;
+  padding: 12px; background: #f8f9fa; border-radius: 8px;
+}
+.step-num {
+  background: var(--hq-primary); color: white; width: 36px; height: 36px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; flex-shrink: 0;
+}
+
+.module-overview {
+  background: linear-gradient(135deg, var(--hq-light), white);
+  padding: 25px; border-radius: 10px; margin: 20px 0;
+  border: 1px solid var(--hq-accent);
+}
+
+.quiz-section {
+  background: #fffaf0; border: 2px solid var(--hq-warning);
+  padding: 20px; border-radius: 10px; margin: 25px 0;
+}
+.quiz-question { margin: 15px 0; padding: 12px; background: white; border-radius: 6px; }
+.quiz-question p { margin: 5px 0; font-weight: 600; }
+.quiz-answer {
+  margin-top: 8px; padding: 6px 10px; background: #e6f7ed;
+  border-right: 3px solid var(--hq-success); border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* ============ التوي ============ */
+.toc {
+  background: white; padding: 30px; border-radius: 10px;
+  border: 2px solid var(--hq-primary);
+}
+.toc h2 { text-align: center; color: var(--hq-primary); margin-bottom: 25px; }
+.toc ol { padding-right: 0; list-style: none; }
+.toc > ol > li {
+  padding: 12px 15px; margin: 5px 0; background: var(--hq-cream);
+  border-radius: 6px; border-right: 4px solid var(--hq-accent);
+}
+.toc > ol > li > a {
+  text-decoration: none; color: var(--hq-dark); font-weight: 700; font-size: 1.05rem;
+}
+.toc > ol > li > ul {
+  margin-top: 8px; padding-right: 20px; list-style: disc;
+}
+.toc > ol > li > ul > li > a {
+  color: #555; text-decoration: none; font-weight: 400; font-size: 0.9rem;
+}
+.toc a:hover { color: var(--hq-primary); }
+
+/* ============ الشهادة ============ */
+.certificate {
+  background: white; padding: 60px;
+  border: 12px double var(--hq-primary); border-radius: 8px;
+  text-align: center; margin: 40px 0;
+}
+.certificate h1 { font-size: 3rem; color: var(--hq-primary); margin: 20px 0; }
+.certificate .ribbon {
+  display: inline-block; background: var(--hq-accent); color: white;
+  padding: 8px 30px; border-radius: 30px; font-size: 1.1rem; margin: 15px 0;
+}
+.certificate .recipient {
+  border-bottom: 2px solid #333; padding: 15px 30px;
+  display: inline-block; margin: 20px 0; min-width: 300px;
+  font-size: 1.5rem; font-weight: 700;
+}
+
+/* ============ الطباعة ============ */
+@media print {
+  body { background: white; font-size: 10pt; }
+  .course-nav, .no-print { display: none !important; }
+  .page {
+    box-shadow: none; margin: 0; padding: 1cm;
+    page-break-after: always; border-radius: 0;
+  }
+  .cover-page { min-height: auto; }
+  table, .callout, .quiz-section { page-break-inside: avoid; }
+  h1, h2, h3 { page-break-after: avoid; }
+  .lesson-title { page-break-before: auto; }
+  pre { background: #f4f4f4 !important; color: #333 !important; border: 1px solid #ccc; }
+  @page { size: A4; margin: 1.5cm; }
+}
+
+/* ============ الوضع التفاعلي ============ */
+body.slides-mode .page { display: none; }
+body.slides-mode .page.active { display: block; min-height: 80vh; }
+body.slides-mode .course-nav .slide-controls { display: flex; }
+.slide-controls { display: none; gap: 6px; }
+
+/* مؤشر التقدّم */
+.progress-bar-container {
+  position: fixed; top: 48px; right: 0; left: 0; height: 4px;
+  background: rgba(0,0,0,0.1); z-index: 999;
+}
+.progress-bar-fill {
+  height: 100%; background: var(--hq-accent);
+  transition: width 0.3s ease; width: 0;
+}
+</style>
+</head>
+<body>
+
+<!-- شريط التنقل -->
+<div class="course-nav">
+  <div class="brand">
+    <i class="bi bi-book-half"></i> الدورة التدريبية الشاملة - نظام حقّنا
+  </div>
+  <div class="controls">
+    <select id="quickJump" onchange="jumpTo(this.value)">
+      <option value="">⬇ انتقل إلى وحدة...</option>
+    </select>
+    <button onclick="toggleMode()" id="modeBtn">🖼️ وضع العرض</button>
+    <button onclick="window.print()">🖨️ طباعة</button>
+    <button onclick="window.location.href='/tutorials/'">↩ عودة</button>
+  </div>
+</div>
+<div class="progress-bar-container"><div class="progress-bar-fill" id="progressBar"></div></div>
+
+<!-- ============================================================ -->
+<!-- صفحة الغلاف -->
+<!-- ============================================================ -->
+<div class="page cover-page" id="cover">
+  <img src="{% static 'img/logo.jpg' %}" alt="حقّنا">
+  <h1>الدورة التدريبية الشاملة</h1>
+  <h2>نظام توثيق الناجين والمسح الاجتماعي</h2>
+  <div class="tagline">
+    دليل احترافي متكامل في 12 وحدة تدريبية و 60 درساً<br>
+    لتمكين المتطوّعين من توثيق ملفات الناجين بمعايير IIIM والمحاكم الدولية
+  </div>
+  <div class="meta">
+    <div>
+      <span class="badge-cover">📚 12 وحدة</span>
+      <span class="badge-cover">📖 60 درس</span>
+      <span class="badge-cover">⏱️ ~15 ساعة</span>
+      <span class="badge-cover">🎓 شهادة جاهزية</span>
+    </div>
+    <div style="margin-top:30px;">
+      <strong>جمعية حقّنا (HAQQUNA)</strong><br>
+      الخدمات الاجتماعية · القانون والدفاع والحقوق · التعليم والتمكين
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- مقدمة الدورة -->
+<!-- ============================================================ -->
+<div class="page" id="intro">
+  <h1 class="module-title"><i class="bi bi-info-circle-fill"></i> مقدمة الدورة</h1>
+
+  <h3>كلمة افتتاحية</h3>
+  <p>
+    أنت تحمل بين يديك أكثر من مجرد دليل تقني - أنت تحمل دليل عمل لمهمّة إنسانية وقانونية بالغة الحساسية.
+    كل ملف توثّقه قد يكون يوماً ما الدليلَ الذي يُدخل أحد المجرمين إلى المحكمة،
+    أو الذي يُعيد الكرامة لعائلة فقدت معيلها، أو الذي يحفظ ذاكرة جيل بأكمله.
+  </p>
+  <p>
+    صُمّمت هذه الدورة لتأخذ المتطوّع من مرحلة "لا أعرف شيئاً" إلى مرحلة "جاهز للعمل الميداني"
+    وفق معايير الأمم المتحدة والمحكمة الجنائية الدولية، خلال فترة تدريبية مكثّفة.
+  </p>
+
+  <div class="callout callout-info">
+    <div class="callout-title"><i class="bi bi-bullseye"></i> فلسفة الدورة</div>
+    <p>
+      نحن لا نُعلّمك كيف تستخدم "برنامج" - نحن نُعلّمك <strong>منهجية</strong>
+      تستخدم النظام كأداة لتحقيقها. الفرق جوهري:
+      البرنامج يتغيّر، المنهجية تبقى.
+    </p>
+  </div>
+
+  <h3>كيف تستخدم هذا الدليل؟</h3>
+  <div class="step-card">
+    <div class="step-num">١</div>
+    <div>
+      <strong>اقرأ بالتسلسل في المرة الأولى.</strong>
+      الوحدات مرتّبة بشكل متدرّج، كل وحدة تعتمد على ما سبقها. لا تقفز.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٢</div>
+    <div>
+      <strong>طبّق عملياً بعد كل وحدة.</strong>
+      افتح النظام، جرّب ما تعلّمته، ارتكب الأخطاء في بيئة التدريب لا الإنتاج.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٣</div>
+    <div>
+      <strong>حل الاختبارات الذاتية.</strong>
+      كل وحدة تنتهي بأسئلة - اذا لم تستطع الإجابة، أعد قراءة الوحدة.
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٤</div>
+    <div>
+      <strong>استخدم هذا الدليل كمرجع لاحقاً.</strong>
+      احتفظ بنسخة مطبوعة على مكتبك. أشِر للوحدات عند الحاجة.
+    </div>
+  </div>
+
+  <h3>الجمهور المستهدف</h3>
+  <table>
+    <tr><th>الفئة</th><th>الأقسام الموصى بها</th></tr>
+    <tr><td>الموثّق الميداني</td><td>كل الوحدات (إجباري)</td></tr>
+    <tr><td>المشرف على التوثيق</td><td>كل الوحدات + الوحدتان 10 و 11</td></tr>
+    <tr><td>المدير التنفيذي</td><td>الوحدات 1، 2، 3، 9، 10، 11</td></tr>
+    <tr><td>ضابط حماية البيانات</td><td>الوحدات 2، 3، 10، 11</td></tr>
+    <tr><td>المهندس التقني</td><td>الوحدات 3، 9، 10، 11</td></tr>
+  </table>
+
+  <h3>عن المعايير الدولية المعتمدة</h3>
+  <p>الدورة بأكملها مبنية على أربعة معايير دولية صارمة:</p>
+  <ul>
+    <li><strong>بروتوكول إسطنبول المحدّث (2022):</strong> توثيق التعذيب وسوء المعاملة.</li>
+    <li><strong>بروتوكول بيركلي (2022):</strong> التحقيقات الرقمية مفتوحة المصدر.</li>
+    <li><strong>منهجية IIIM (Annex A, 2024):</strong> الآلية الدولية المحايدة المستقلة لسوريا.</li>
+    <li><strong>دليل Eurojust/ICC (2022):</strong> للمنظمات المدنية الداعمة للمحاكم.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- جدول المحتويات -->
+<!-- ============================================================ -->
+<div class="page" id="toc">
+  <div class="toc">
+    <h2><i class="bi bi-list-ol"></i> جدول المحتويات</h2>
+    <ol>
+      <li>
+        <a href="#m1">الوحدة الأولى: نبذة عن جمعية حقّنا والمعايير الدولية</a>
+        <ul>
+          <li><a href="#l1-1">1.1 نبذة عن جمعية حقّنا</a></li>
+          <li><a href="#l1-2">1.2 السياق السوري ولماذا التوثيق</a></li>
+          <li><a href="#l1-3">1.3 المعايير الدولية الأربعة</a></li>
+          <li><a href="#l1-4">1.4 الجهات الدولية المتلقية</a></li>
+          <li><a href="#l1-5">1.5 الإطار القانوني والأخلاقي</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m2">الوحدة الثانية: الأخلاقيات والموافقة المستنيرة</a>
+        <ul>
+          <li><a href="#l2-1">2.1 مبدأ "لا ضرر"</a></li>
+          <li><a href="#l2-2">2.2 أركان الموافقة المستنيرة الستة</a></li>
+          <li><a href="#l2-3">2.3 الموافقة الطبقية</a></li>
+          <li><a href="#l2-4">2.4 تجنّب إعادة الصدمة</a></li>
+          <li><a href="#l2-5">2.5 حقوق الناجي وحدود السرّية</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m3">الوحدة الثالثة: بنية النظام التقنية</a>
+        <ul>
+          <li><a href="#l3-1">3.1 نظرة عامة على النظام</a></li>
+          <li><a href="#l3-2">3.2 التطبيقات الخمسة</a></li>
+          <li><a href="#l3-3">3.3 نموذج البيانات</a></li>
+          <li><a href="#l3-4">3.4 نظام الصلاحيات والأدوار الستة</a></li>
+          <li><a href="#l3-5">3.5 سجل التدقيق التلقائي</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m4">الوحدة الرابعة: عملية التوثيق الكاملة</a>
+        <ul>
+          <li><a href="#l4-1">4.1 إنشاء ملف ناجٍ</a></li>
+          <li><a href="#l4-2">4.2 الموافقة المستنيرة في النظام</a></li>
+          <li><a href="#l4-3">4.3 توثيق وقائع الاعتقال</a></li>
+          <li><a href="#l4-4">4.4 الخط الزمني للاحتجاز</a></li>
+          <li><a href="#l4-5">4.5 توثيق الإفراج</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m5">الوحدة الخامسة: الأدلة المتقاطعة وسلسلة الحيازة</a>
+        <ul>
+          <li><a href="#l5-1">5.1 الشهود المتقاطعون</a></li>
+          <li><a href="#l5-2">5.2 تصنيف الوثائق</a></li>
+          <li><a href="#l5-3">5.3 سلسلة الحيازة</a></li>
+          <li><a href="#l5-4">5.4 بصمات SHA-256</a></li>
+          <li><a href="#l5-5">5.5 بروتوكول بيركلي للوثائق الرقمية</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m6">الوحدة السادسة: المقابلات والوسائط المتعددة</a>
+        <ul>
+          <li><a href="#l6-1">6.1 منهجيات المقابلات</a></li>
+          <li><a href="#l6-2">6.2 تعدد المقابلات</a></li>
+          <li><a href="#l6-3">6.3 رفع وإدارة الفيديوهات</a></li>
+          <li><a href="#l6-4">6.4 اعتبارات النوع الاجتماعي</a></li>
+          <li><a href="#l6-5">6.5 التقييم الطبي وفق إسطنبول</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m7">الوحدة السابعة: المسح الاجتماعي للأسرة</a>
+        <ul>
+          <li><a href="#l7-1">7.1 أهداف المسح الاجتماعي</a></li>
+          <li><a href="#l7-2">7.2 بيانات الأسرة والأطفال</a></li>
+          <li><a href="#l7-3">7.3 السكن - الجغرافيا المتدرّجة</a></li>
+          <li><a href="#l7-4">7.4 التعليم والعمل والدخل</a></li>
+          <li><a href="#l7-5">7.5 الصحة وتقييم الاحتياجات</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m8">الوحدة الثامنة: نظام التقييم الذكي</a>
+        <ul>
+          <li><a href="#l8-1">8.1 آلية الحساب الآلي</a></li>
+          <li><a href="#l8-2">8.2 معايير الموثوقية</a></li>
+          <li><a href="#l8-3">8.3 معايير التحقق المتقاطع</a></li>
+          <li><a href="#l8-4">8.4 معايير الاكتمال</a></li>
+          <li><a href="#l8-5">8.5 من فئة C إلى A</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m9">الوحدة التاسعة: التصدير والإحالة للجهات الخارجية</a>
+        <ul>
+          <li><a href="#l9-1">9.1 تصدير Excel بأعمدة مخصصة</a></li>
+          <li><a href="#l9-2">9.2 تصدير PDF والطباعة</a></li>
+          <li><a href="#l9-3">9.3 تصدير واستيراد JSON</a></li>
+          <li><a href="#l9-4">9.4 الإحالة للـ15 جهة معتمدة</a></li>
+          <li><a href="#l9-5">9.5 حزمة الإحالة الرسمية</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m10">الوحدة العاشرة: الأمن وحماية البيانات</a>
+        <ul>
+          <li><a href="#l10-1">10.1 تأمين الحسابات</a></li>
+          <li><a href="#l10-2">10.2 سجل التدقيق</a></li>
+          <li><a href="#l10-3">10.3 التحقق من ملفات الرفع</a></li>
+          <li><a href="#l10-4">10.4 الأرشفة الآمنة</a></li>
+          <li><a href="#l10-5">10.5 التشفير والنسخ الاحتياطي</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m11">الوحدة الحادية عشرة: التشغيل والصيانة</a>
+        <ul>
+          <li><a href="#l11-1">11.1 التنصيب والإعداد الأولي</a></li>
+          <li><a href="#l11-2">11.2 إدارة المستخدمين</a></li>
+          <li><a href="#l11-3">11.3 استكشاف الأخطاء</a></li>
+          <li><a href="#l11-4">11.4 النسخ الاحتياطية</a></li>
+          <li><a href="#l11-5">11.5 التحديثات والصيانة</a></li>
+        </ul>
+      </li>
+      <li>
+        <a href="#m12">الوحدة الثانية عشرة: حالات دراسية وتمارين</a>
+        <ul>
+          <li><a href="#l12-1">12.1 حالة كاملة من الصفر للفئة A</a></li>
+          <li><a href="#l12-2">12.2 حالة بدون وثائق رسمية</a></li>
+          <li><a href="#l12-3">12.3 حالة الناجي مع شهود متعددين</a></li>
+          <li><a href="#l12-4">12.4 الأخطاء الشائعة</a></li>
+          <li><a href="#l12-5">12.5 الاختبار الختامي</a></li>
+        </ul>
+      </li>
+      <li><a href="#appendix">الملحقات: المسرد، المراجع، الشهادة</a></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 1 -->
+<!-- ============================================================ -->
+<div class="page" id="m1">
+  <div class="module-number">الوحدة الأولى</div>
+  <h1 class="module-title"><i class="bi bi-mortarboard-fill"></i> نبذة عن جمعية حقّنا والمعايير الدولية</h1>
+
+  <div class="module-overview">
+    <h4><i class="bi bi-info-circle"></i> نظرة عامة</h4>
+    <p>هذه الوحدة هي أساس كل ما سيأتي بعدها. ستتعرّف على هويّة الجمعية، السياق الذي نعمل فيه،
+       المعايير الدولية التي تحكم عملنا، والجهات التي ستستلم ملفاتك. لا تستهن بهذه المعلومات -
+       فهي ليست مجرد خلفية، بل المنطق الذي يقود كل قرار توثيقي ستتخذه.</p>
+    <p><strong>المدة المتوقعة:</strong> 90 دقيقة قراءة + 30 دقيقة تأمل</p>
+  </div>
+
+  <div class="objectives">
+    <h4>🎯 ما ستتعلّمه في هذه الوحدة</h4>
+    <ul>
+      <li>هوية جمعية حقّنا ومجالات عملها الثلاثة</li>
+      <li>السياق السوري الذي يجعل التوثيق ضرورة عاجلة</li>
+      <li>المعايير الدولية الأربعة بالتفصيل</li>
+      <li>الجهات الـ15 المعنية باستلام ملفاتنا</li>
+      <li>الإطار القانوني والأخلاقي للعمل</li>
+    </ul>
+  </div>
+
+  <!-- الدرس 1.1 -->
+  <h2 class="lesson-title" id="l1-1"><span class="lesson-number">1.1</span> نبذة عن جمعية حقّنا</h2>
+
+  <p>
+    <strong>جمعية حقّنا (HAQQUNA)</strong> جمعية سورية مدنية مستقلة، تعمل من أجل العدالة
+    والمساءلة ودعم الناجين من الانتهاكات. اسمنا - "حقّنا" - يحمل معنى مزدوجاً:
+    حقوق الناجين، وحقنا جميعاً في وطن خالٍ من التعذيب.
+  </p>
+
+  <h3>المجالات الثلاثة لعمل الجمعية</h3>
+  <table>
+    <thead><tr><th>المجال</th><th>الأنشطة</th><th>الجمهور المستهدف</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>🤝 الخدمات الاجتماعية</strong></td>
+        <td>دعم نفسي واجتماعي للناجين، مرافقة العائلات، إحالات طبية، برامج تمكين اقتصادي</td>
+        <td>الناجون وعائلاتهم</td>
+      </tr>
+      <tr>
+        <td><strong>⚖️ القانون والدفاع والحقوق</strong></td>
+        <td>توثيق الانتهاكات وفق معايير دولية، إحالة الملفات للجهات القضائية، المناصرة، الاستشارات القانونية</td>
+        <td>الناجون، المحاكم الدولية، صنّاع القرار</td>
+      </tr>
+      <tr>
+        <td><strong>🎓 التعليم والتمكين</strong></td>
+        <td>تدريب المتطوّعين، ورش حقوق الإنسان، تثقيف الناجين بحقوقهم، تمكين الشباب والنساء</td>
+        <td>المتطوّعون، الطلاب، الشباب، النساء</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <div class="callout-title"><i class="bi bi-lightbulb"></i> لاحظ التكامل</div>
+    <p>المجالات الثلاثة ليست منفصلة - بل تتغذّى من بعضها. الناجي الذي ندعمه اجتماعياً
+       يصبح مصدر معلومات لقسم التوثيق. الملف الذي نوثّقه يفتح أبواب التعويض القانوني.
+       المتطوّعون الذين ندرّبهم يخدمون كل القطاعات. <strong>هذه ليست بيروقراطية - بل منظومة عمل
+       متكاملة لخدمة الناجين.</strong></p>
+  </div>
+
+  <!-- الدرس 1.2 -->
+  <h2 class="lesson-title" id="l1-2"><span class="lesson-number">1.2</span> السياق السوري ولماذا التوثيق</h2>
+
+  <p>
+    منذ عام 2011، تعرّض مئات الآلاف من السوريين للاعتقال التعسفي والاختفاء القسري والتعذيب
+    على يد أجهزة الأمن المختلفة. تقارير لجنة التحقيق الأممية والآلية الدولية تُشير إلى:
+  </p>
+  <ul>
+    <li>أكثر من <strong>150,000</strong> معتقل ومُختفٍ موثّق (الشبكة السورية لحقوق الإنسان).</li>
+    <li>عشرات آلاف الوفيات داخل المعتقلات.</li>
+    <li>أنماط تعذيب ممنهجة موثّقة بـ <strong>تسريبات قيصر</strong> (53,000+ صورة جثة).</li>
+    <li>محاكمات بدأت في أوروبا منذ 2018 (كوبلنز، فرانكفورت، باريس، ستوكهولم).</li>
+  </ul>
+
+  <h3>لماذا التوثيق أهمّ من أي وقت مضى؟</h3>
+  <div class="step-card">
+    <div class="step-num">١</div>
+    <div><strong>الزمن عدوّنا.</strong> الذاكرة تخون، الشهود يفقدون التواصل، الندوب تلتئم،
+       الوثائق الورقية تتلف. التوثيق المبكّر = حفظ الأدلة.</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٢</div>
+    <div><strong>المحاكم تحتاج لأدلة منهجية.</strong> الـIIIM وحدها لديها أكثر من 1.2 مليون
+       وثيقة - لكنها تحتاج روابط بشرية (الناجين والشهود) لربط الوثائق بالقضايا.</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٣</div>
+    <div><strong>الناجي بحاجة لأن يُسمَع.</strong> التوثيق المهني - دون استغلال - هو شكل
+       من أشكال التحرّر من الصدمة. أن يحوّل الناجي ألمه إلى دليل = شفاء جزئي.</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٤</div>
+    <div><strong>عدالة المستقبل.</strong> العدالة الانتقالية في سوريا - متى حدثت - ستحتاج
+       لقاعدة بيانات هائلة. كل ملف نوثّقه اليوم هو لبنة في ذلك المستقبل.</div>
+  </div>
+
+  <!-- الدرس 1.3 -->
+  <h2 class="lesson-title" id="l1-3"><span class="lesson-number">1.3</span> المعايير الدولية الأربعة</h2>
+
+  <p>لم نخترع شيئاً - نتبع منظومة معايير دولية صارمة. هذه المعايير ليست توصيات، بل شروط قبول الأدلة:</p>
+
+  <h3>1️⃣ بروتوكول إسطنبول (Istanbul Protocol, Rev. 2, 2022)</h3>
+  <p>
+    <strong>المرجع الأممي لتوثيق التعذيب وسوء المعاملة.</strong>
+    صدر عام 1999، حُدّث عام 2022. يحدّد:
+  </p>
+  <ul>
+    <li>كيفية إجراء المقابلة مع الناجي (الأسئلة المفتوحة، تجنّب الإيحاء).</li>
+    <li>كيفية وصف الإصابات (الفحص الجسدي، تصنيف الندوب).</li>
+    <li>تصنيف أنماط التعذيب (5 فئات رئيسية).</li>
+    <li>تقييم التوافق بين الإصابات والرواية (6 مستويات قياسية).</li>
+  </ul>
+  <div class="callout callout-warning">
+    <div class="callout-title"><i class="bi bi-exclamation-triangle"></i> ملاحظة هامة</div>
+    <p>التقييم الطبي الكامل وفق إسطنبول يتطلب طبيباً مدرّباً. <strong>المتطوّع العادي</strong>
+       لا يُجري هذا التقييم - بل يُحيل الناجي لمنظمات متخصصة مثل LDHR.</p>
+  </div>
+
+  <h3>2️⃣ بروتوكول بيركلي (Berkeley Protocol, 2022)</h3>
+  <p>
+    <strong>معايير التحقيقات الرقمية مفتوحة المصدر</strong>
+    (Open Source Investigations). صدر عام 2020، حُدّث 2022.
+    يُعدّ ضرورياً لنا لأن جزءاً كبيراً من أدلتنا الرقمية (تسريبات، فيديوهات، صور قيصر) ينطبق عليه.
+  </p>
+  <ul>
+    <li>كيف نحفظ الرابط الأصلي (URL) والنسخة المؤرشفة.</li>
+    <li>كيف نتحقق من الميتاداتا (تاريخ، موقع، كاميرا).</li>
+    <li>كيف نُجري التحليل الجنائي للصور والفيديوهات.</li>
+    <li>تسجيل وقت الوصول للملف الرقمي.</li>
+  </ul>
+
+  <h3>3️⃣ منهجية الـIIIM (Annex A, ديسمبر 2024)</h3>
+  <p>
+    <strong>دليل الآلية الدولية المحايدة المستقلة لسوريا.</strong>
+    صدر حديثاً جداً (نهاية 2024) ويحدّد بدقة ما تقبله الـIIIM من المنظمات المدنية:
+  </p>
+  <ul>
+    <li>الحد الأدنى من البيانات المطلوبة لكل ملف.</li>
+    <li>متطلبات الموافقة المستنيرة (تجنّب إعادة المقابلة).</li>
+    <li>صيغ التسليم الآمن (Information Provider Agreement).</li>
+    <li>سلسلة الحيازة والتحقق من السلامة.</li>
+  </ul>
+
+  <h3>4️⃣ دليل Eurojust/ICC للمجتمع المدني (2022)</h3>
+  <p>
+    <strong>دليل صدر خصيصاً للمنظمات مثل حقّنا.</strong>
+    يشرح كيف ندعم التحقيقات الدولية دون أن نُفسد عملها (مثل أخذ شهادات بطريقة قد تُعتبر "ملوّثة" قضائياً).
+  </p>
+  <ul>
+    <li>الفرق بين "محضر مقابلة" و "أقوال شاهد رسمية" (نأخذ الأول، لا الثاني).</li>
+    <li>كيفية حفظ سلسلة الحيازة من المنظمة إلى المدّعي العام.</li>
+    <li>التعاون مع المحققين القضائيين دون إرباك عملهم.</li>
+  </ul>
+
+  <!-- الدرس 1.4 -->
+  <h2 class="lesson-title" id="l1-4"><span class="lesson-number">1.4</span> الجهات الدولية المتلقية</h2>
+
+  <p>عملنا التوثيقي ليس للأرشيف. الملفات تذهب لـ <strong>15 جهة معتمدة</strong> مصنّفة في 4 فئات:</p>
+
+  <table>
+    <thead><tr><th>الفئة</th><th>الجهات</th><th>الاختصاص</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>🌐 الجهات الأممية</strong></td>
+        <td>IIIM, CoI, ICC</td>
+        <td>المعايير الدولية، التحقيقات الجنائية الدولية</td>
+      </tr>
+      <tr>
+        <td><strong>🏛️ الجهات الوطنية السورية</strong></td>
+        <td>هيئة العدالة الانتقالية في سوريا</td>
+        <td>العدالة الانتقالية والمحاسبة الداخلية</td>
+      </tr>
+      <tr>
+        <td><strong>⚖️ ولاية قضائية عالمية</strong></td>
+        <td>ألمانيا (كوبلنز)، فرنسا، السويد، هولندا، الولايات المتحدة</td>
+        <td>محاكمة مسؤولين عن الانتهاكات بصرف النظر عن مكان الجريمة</td>
+      </tr>
+      <tr>
+        <td><strong>🤝 المنظمات الشريكة</strong></td>
+        <td>CIJA, SNHR, SJAC, LDHR, ADMSP, Caesar Families</td>
+        <td>تنسيق، تبادل بيانات، تكامل توثيقي</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success">
+    <div class="callout-title"><i class="bi bi-check-circle"></i> ميزة النظام</div>
+    <p>النظام يحوي قائمة جاهزة بكل هذه الجهات مع عناوينها وشروط استلامها للملفات،
+       ويتحقق آلياً من أن الناجي وافق صراحةً على المشاركة قبل الإحالة.</p>
+  </div>
+
+  <!-- الدرس 1.5 -->
+  <h2 class="lesson-title" id="l1-5"><span class="lesson-number">1.5</span> الإطار القانوني والأخلاقي</h2>
+
+  <p>عمل التوثيق محكوم بمنظومة قانونية وأخلاقية:</p>
+
+  <h3>الإطار القانوني</h3>
+  <ul>
+    <li><strong>القانون الدولي:</strong>
+      <ul>
+        <li>اتفاقية مناهضة التعذيب (CAT) - 1984</li>
+        <li>العهد الدولي للحقوق المدنية والسياسية (ICCPR)</li>
+        <li>اتفاقيات جنيف الأربع - 1949</li>
+        <li>نظام روما الأساسي للمحكمة الجنائية الدولية</li>
+      </ul>
+    </li>
+    <li><strong>قوانين الدول المضيفة:</strong>
+      <ul>
+        <li>قانون الجرائم الدولية الألماني (VStGB)</li>
+        <li>قوانين الولاية القضائية العالمية الأوروبية</li>
+      </ul>
+    </li>
+    <li><strong>قوانين حماية البيانات:</strong>
+      <ul>
+        <li>GDPR الأوروبي (للبيانات في خوادم أوروبية)</li>
+        <li>القوانين السورية لحماية الخصوصية</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>الإطار الأخلاقي</h3>
+  <p>تقوم منهجية حقّنا على <strong>أربعة مبادئ أخلاقية</strong> غير قابلة للتفاوض:</p>
+  <ol>
+    <li><strong>الكرامة الإنسانية:</strong> الناجي ليس مصدر معلومات - هو إنسان قبل كل شيء.</li>
+    <li><strong>الاستقلالية:</strong> الناجي يقرّر ماذا يُشارك ومع مَن.</li>
+    <li><strong>عدم الإيذاء:</strong> نمتنع عن أي فعل قد يضرّ بالناجي أو عائلته.</li>
+    <li><strong>العدالة:</strong> نعامل كل ناجٍ بالمعايير ذاتها، دون تمييز سياسي أو طائفي أو عرقي.</li>
+  </ol>
+
+  <div class="quiz-section">
+    <h3>📝 اختبر فهمك للوحدة الأولى</h3>
+    <div class="quiz-question">
+      <p>س1: ما هي مجالات عمل جمعية حقّنا الثلاثة؟</p>
+      <div class="quiz-answer">
+        الإجابة: الخدمات الاجتماعية، القانون والدفاع والحقوق، التعليم والتمكين.
+      </div>
+    </div>
+    <div class="quiz-question">
+      <p>س2: لماذا يُعدّ بروتوكول بيركلي ضرورياً لعملنا؟</p>
+      <div class="quiz-answer">
+        لأنه يحدّد كيف نوثّق ونتحقق من الأدلة الرقمية المأخوذة من مصادر مفتوحة
+        (تسريبات، صور قيصر، فيديوهات يوتيوب، منشورات وسائل التواصل).
+      </div>
+    </div>
+    <div class="quiz-question">
+      <p>س3: ما الفرق بين IIIM و ICC؟</p>
+      <div class="quiz-answer">
+        IIIM آلية أممية لجمع وتنظيم الأدلة عن الانتهاكات في سوريا، تُسلّم للمحاكم المختصة.
+        ICC هي محكمة جنائية دولية لمحاكمة مرتكبي الجرائم الكبرى. الـIIIM لا تُحاكم، بل تُمكّن المحاكمة.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 2 -->
+<!-- ============================================================ -->
+<div class="page" id="m2">
+  <div class="module-number">الوحدة الثانية</div>
+  <h1 class="module-title"><i class="bi bi-shield-fill-check"></i> الأخلاقيات والموافقة المستنيرة</h1>
+
+  <div class="module-overview">
+    <h4><i class="bi bi-info-circle"></i> نظرة عامة</h4>
+    <p>إذا كان عليك أن تتذكر <strong>وحدة واحدة فقط</strong> من هذه الدورة، فلتكن هذه.
+       الأخطاء التقنية يمكن تصحيحها، أما الأخطاء الأخلاقية فقد تُكلّف الناجي حياته،
+       وتُكلّف الجمعية مصداقيتها.</p>
+    <p><strong>المدة المتوقعة:</strong> 120 دقيقة قراءة + ساعتان تأمل</p>
+  </div>
+
+  <div class="objectives">
+    <h4>🎯 ما ستتعلّمه في هذه الوحدة</h4>
+    <ul>
+      <li>تطبيق مبدأ "لا ضرر" عملياً</li>
+      <li>إتقان الأركان الستة للموافقة المستنيرة</li>
+      <li>مفهوم الموافقة الطبقية وكيف تأخذها</li>
+      <li>كيفية تجنّب إعادة الصدمة (Re-traumatization)</li>
+      <li>حدود السرّية وحق الانسحاب</li>
+    </ul>
+  </div>
+
+  <!-- الدرس 2.1 -->
+  <h2 class="lesson-title" id="l2-1"><span class="lesson-number">2.1</span> مبدأ "لا ضرر" (Do No Harm)</h2>
+
+  <p>
+    مبدأ بسيط النص، صعب التطبيق: <strong>صحة الناجي ورفاهه وأمنه يأتيان قبل أي اعتبار توثيقي.</strong>
+    إن تعارض تفصيل دقيق مع سلامة الناجي، نُضحّي بالتفصيل.
+  </p>
+
+  <h3>الأذى المحتمل - 4 أشكال</h3>
+  <table>
+    <thead><tr><th>الشكل</th><th>المثال</th><th>كيف نتجنّبه</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>أذى أمني</strong></td>
+        <td>تسريب اسم الناجي يعرّضه لخطر النظام أو فصيل مسلح</td>
+        <td>تشفير البيانات، إخفاء الهوية، سرّية تامة</td>
+      </tr>
+      <tr>
+        <td><strong>أذى نفسي</strong></td>
+        <td>إعادة سرد التعذيب يُعيد الناجي للصدمة</td>
+        <td>تجنّب إعادة المقابلة، أسئلة مفتوحة، إحالات نفسية</td>
+      </tr>
+      <tr>
+        <td><strong>أذى اجتماعي</strong></td>
+        <td>كشف اعتداء جنسي يدمّر مكانة الناجي في أسرته</td>
+        <td>موافقة طبقية صريحة، خيار إخفاء التفاصيل الحساسة</td>
+      </tr>
+      <tr>
+        <td><strong>أذى اقتصادي</strong></td>
+        <td>وعد بمساعدة مالية لم نقدر على تنفيذها</td>
+        <td>لا نَعِد بما لا نملك، نوضح أن المشاركة طوعية بدون مقابل</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-danger">
+    <div class="callout-title"><i class="bi bi-x-octagon"></i> ممنوع منعاً باتاً</div>
+    <ul>
+      <li>نشر صور أو تفاصيل ناجٍ علناً دون موافقة كتابية.</li>
+      <li>وعد الناجي بإفراج عن أحد أقاربه، أو بمساعدة مالية.</li>
+      <li>إجبار الناجي على إتمام المقابلة وهو متعب أو منزعج.</li>
+      <li>مشاركة معلومات الناجي مع جهة لم يوافق عليها صراحةً.</li>
+      <li>الاحتفاظ بنسخ غير مشفّرة من البيانات على أجهزة شخصية.</li>
+    </ul>
+  </div>
+
+  <!-- الدرس 2.2 -->
+  <h2 class="lesson-title" id="l2-2"><span class="lesson-number">2.2</span> أركان الموافقة المستنيرة الستة</h2>
+
+  <p>قبل أي سؤال للناجي، يجب أن نشرح له ونتأكد من فهمه لـ <strong>كل ركن</strong> من هذه الستة:</p>
+
+  <div class="step-card">
+    <div class="step-num">١</div>
+    <div>
+      <strong>من نحن وماذا نريد:</strong>
+      نُعرّف عن أنفسنا (الاسم، المنظمة، الصفة). الناجي له الحق في معرفة بالضبط من يكلّمه.
+      <div class="example">
+        <span class="example-label">صياغة مقترحة</span>
+        "اسمي [...] متطوّع في جمعية حقّنا. نحن جمعية سورية مستقلة نعمل على توثيق الانتهاكات
+        ودعم الناجين. أريد أن نتحدّث عن تجربتك في الاعتقال إذا كنت مستعداً."
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٢</div>
+    <div>
+      <strong>الغرض من المعلومات:</strong>
+      المعلومات تذهب لمن؟ تُستخدم لماذا؟ (توثيق، عدالة، مناصرة، إحالة).
+      كن صريحاً وواضحاً، ولا تُخفِ شيئاً.
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٣</div>
+    <div>
+      <strong>حدود السرّية:</strong>
+      نَعِد بالسرّية لكن نوضح أنها ليست مطلقة:
+      <ul>
+        <li>قد نُضطر للإفصاح في حالات الخطر الوشيك على شخص (مثل تهديد بالقتل).</li>
+        <li>قد تطلب جهة قضائية رسمية الإفصاح بأمر محكمة.</li>
+        <li>إذا أشار الناجي لقصد إيذاء نفسه أو غيره.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٤</div>
+    <div>
+      <strong>الموافقة الطبقية:</strong>
+      الناجي يحدد <strong>بدقة</strong> مع أي جهة يُسمح بمشاركة ملفه.
+      <em>تفاصيل في الدرس التالي.</em>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٥</div>
+    <div>
+      <strong>حق الانسحاب:</strong>
+      يحق له/ها سحب الموافقة في أي وقت دون عواقب.
+      نشرح كيف يتواصل معنا للانسحاب (رقم هاتف، بريد، شخص مرجعي).
+      <div class="example">
+        <span class="example-label">في نظام حقّنا</span>
+        نموذج الموافقة فيه حقل "سُحبت الموافقة" مع تاريخ السحب والسبب.
+        النظام يمنع آلياً مشاركة الملف بعد السحب.
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٦</div>
+    <div>
+      <strong>التطوّع لا المقابل:</strong>
+      المشاركة طوعية تماماً، لا مال، لا وعد بإجراءات معينة، لا ضغط.
+      الناجي يحق له رفض المشاركة دون أي عواقب.
+    </div>
+  </div>
+
+  <!-- الدرس 2.3 -->
+  <h2 class="lesson-title" id="l2-3"><span class="lesson-number">2.3</span> الموافقة الطبقية</h2>
+
+  <p>
+    <strong>الموافقة الطبقية (Layered Consent)</strong> = الناجي يمنح موافقة منفصلة لكل جهة محتملة.
+    قد يوافق على المشاركة مع IIIM لكن يرفض الإعلام. هذا حقّه.
+  </p>
+
+  <h3>طبقات الموافقة في نظام حقّنا</h3>
+  <table>
+    <thead><tr><th>الجهة</th><th>وصف</th><th>المخاطر المحتملة</th></tr></thead>
+    <tbody>
+      <tr><td>IIIM</td><td>آلية أممية، أعلى مستويات الحماية</td><td>منخفضة جداً</td></tr>
+      <tr><td>لجنة التحقيق</td><td>هيئة أممية تنشر تقارير</td><td>منخفضة، البيانات تُجمَّع غالباً</td></tr>
+      <tr><td>ICC</td><td>محكمة جنائية دولية</td><td>منخفضة، قد تستدعي الناجي للشهادة</td></tr>
+      <tr><td>محاكم وطنية أوروبية</td><td>كوبلنز، فرنسا، السويد...</td><td>متوسطة، قد تستدعي الناجي</td></tr>
+      <tr><td>منظمات شريكة</td><td>CIJA, SNHR...</td><td>متوسطة، حسب سياسة كل منظمة</td></tr>
+      <tr><td>الإعلام</td><td>صحف، قنوات، مواقع</td><td>عالية - النشر العلني</td></tr>
+      <tr><td>نشر علني</td><td>تقارير، مواقع، سوشيال</td><td>عالية جداً</td></tr>
+    </tbody>
+  </table>
+
+  <h3>طبقات إخفاء الهوية</h3>
+  <p>إضافة للموافقة على المشاركة، الناجي يحدد ما يُخفى من هويته:</p>
+  <ul>
+    <li>✓ إخفاء الاسم (يُستبدل برقم مرجعي)</li>
+    <li>✓ إخفاء الصورة</li>
+    <li>✓ إخفاء الموقع الحالي</li>
+    <li>✓ إخفاء تفاصيل العائلة</li>
+  </ul>
+
+  <!-- الدرس 2.4 -->
+  <h2 class="lesson-title" id="l2-4"><span class="lesson-number">2.4</span> تجنّب إعادة الصدمة</h2>
+
+  <p>
+    <strong>Re-traumatization</strong> = إعادة إحياء الصدمة عبر سرد مكرر أو ظروف مقابلة سيئة.
+    قاعدة IIIM الصريحة: <em>"نتجنب إعادة مقابلة الناجين الذين تمت مقابلتهم سابقاً."</em>
+  </p>
+
+  <h3>قائمة فحص قبل أي مقابلة</h3>
+  <ol>
+    <li>هل أجريت معه مقابلة سابقة مع منظمة أخرى؟ <strong>إن نعم، اطلب نسختها.</strong></li>
+    <li>هل المقابلة في مكان آمن وهادئ؟</li>
+    <li>هل هناك متّسع زمني (90+ دقيقة)، أم نحن مستعجلون؟</li>
+    <li>هل يوجد ماء، مناديل، وقت استراحات؟</li>
+    <li>هل أنا (الموثّق) مستعدّ نفسياً، أم متوتّر/متعب؟</li>
+    <li>هل لدينا خطة إحالة فورية إن انهار الناجي؟</li>
+  </ol>
+
+  <h3>العلامات التحذيرية أثناء المقابلة</h3>
+  <p>أوقف المقابلة فوراً وأحِل الناجي لدعم نفسي إن لاحظت:</p>
+  <ul>
+    <li>بكاء غير متحكَّم به أو انهيار.</li>
+    <li>تنفس سريع أو نوبة هلع.</li>
+    <li>تجمّد أو انفصال عن الواقع (يحدّق بفراغ).</li>
+    <li>غضب شديد أو سلوك عدواني.</li>
+    <li>أفكار انتحارية أو يأس صريح.</li>
+  </ul>
+
+  <div class="callout callout-success">
+    <div class="callout-title"><i class="bi bi-star"></i> قاعدة عملية ذهبية</div>
+    <p>اسأل قبل البدء: <em>"هل تريد كأس ماء؟ هل ترغب أن نأخذ استراحة لو شعرت بأي ضيق؟
+       اتفق معي على إشارة (رفع اليد) لإيقاف المقابلة متى أردت."</em>
+       هذا التحكم في الموقف يساعده/ها كثيراً.</p>
+  </div>
+
+  <!-- الدرس 2.5 -->
+  <h2 class="lesson-title" id="l2-5"><span class="lesson-number">2.5</span> حقوق الناجي وحدود السرّية</h2>
+
+  <h3>حقوق الناجي في النظام</h3>
+  <div class="step-card">
+    <div class="step-num">١</div>
+    <div><strong>حق الاطلاع:</strong> يمكنه طلب الاطلاع على ملفه كاملاً في أي وقت.</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٢</div>
+    <div><strong>حق التصحيح:</strong> له الحق بطلب تعديل أي معلومة غير دقيقة.</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٣</div>
+    <div><strong>حق الحذف:</strong> له الحق بطلب إزالة معلومات معيّنة (لا يُحذف الملف كاملاً
+       بل يُؤرشَف لحماية سلسلة الأدلة).</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٤</div>
+    <div><strong>حق الانسحاب:</strong> له الحق بسحب الموافقة كلياً أو جزئياً.</div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">٥</div>
+    <div><strong>حق الإحالة:</strong> له الحق بطلب إحالات طبية، نفسية، قانونية.</div>
+  </div>
+
+  <h3>حدود السرّية</h3>
+  <p>السرّية ليست مطلقة. هذه الحالات نخرج فيها عن السرّية:</p>
+  <ul>
+    <li><strong>خطر وشيك:</strong> الناجي يهدّد بإيذاء نفسه أو غيره فعلياً.</li>
+    <li><strong>أمر قضائي:</strong> محكمة مختصة تطلب الإفصاح بقرار رسمي.</li>
+    <li><strong>الموافقة المسحوبة:</strong> الناجي طلب الإفصاح بنفسه.</li>
+    <li><strong>أمن العاملين:</strong> معلومات تكشف خطراً على فريق الجمعية.</li>
+  </ul>
+
+  <div class="quiz-section">
+    <h3>📝 اختبر فهمك للوحدة الثانية</h3>
+    <div class="quiz-question">
+      <p>س1: هل يحق للناجي سحب موافقته بعد التوقيع؟</p>
+      <div class="quiz-answer">نعم، في أي وقت ودون عواقب. حق الانسحاب مطلق وغير مقيّد بزمن.</div>
+    </div>
+    <div class="quiz-question">
+      <p>س2: ماذا تعني "الموافقة الطبقية"؟</p>
+      <div class="quiz-answer">الناجي يحدد بدقة مع أي جهة يُسمح بمشاركة ملفه (IIIM؟ ICC؟ إعلام؟). كل خيار منفصل.</div>
+    </div>
+    <div class="quiz-question">
+      <p>س3: ماذا تفعل لو وجدت أن لدى الناجي مقابلة سابقة مع منظمة أخرى؟</p>
+      <div class="quiz-answer">
+        تجنّب إعادة المقابلة الكاملة. اطلب نسخة المقابلة السابقة، واكتفِ بمقابلة مكمّلة قصيرة (30-45 دقيقة).
+        وثّق ذلك في حقل "مقابلات سابقة" بالنظام.
+      </div>
+    </div>
+    <div class="quiz-question">
+      <p>س4: متى يحق لنا الإفصاح عن معلومات الناجي دون موافقته؟</p>
+      <div class="quiz-answer">
+        فقط في 4 حالات: خطر وشيك على شخص، أمر قضائي رسمي، الناجي سحب موافقته (طلب الإفصاح بنفسه)،
+        أمن العاملين في الجمعية.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 3 -->
+<!-- ============================================================ -->
+<div class="page" id="m3">
+  <div class="module-number">الوحدة الثالثة</div>
+  <h1 class="module-title"><i class="bi bi-diagram-3-fill"></i> بنية النظام التقنية</h1>
+
+  <div class="module-overview">
+    <h4><i class="bi bi-info-circle"></i> نظرة عامة</h4>
+    <p>قبل أن تستخدم النظام، تحتاج لفهم بنيته الداخلية. هذه الوحدة تشرح كيف بُني نظام حقّنا،
+       لماذا قُسّم بهذا الشكل، وكيف تتدفّق البيانات بين أقسامه. حتى لو لم تكن تقنياً،
+       هذه المعرفة ستجعلك مستخدماً أذكى.</p>
+  </div>
+
+  <div class="objectives">
+    <h4>🎯 ما ستتعلّمه</h4>
+    <ul>
+      <li>المكوّنات الرئيسية للنظام التقني</li>
+      <li>التطبيقات الخمسة ومسؤولية كل منها</li>
+      <li>كيف ترتبط البيانات ببعضها (نموذج البيانات)</li>
+      <li>الأدوار الستة وصلاحيات كل منها</li>
+      <li>كيف يعمل سجل التدقيق التلقائي</li>
+    </ul>
+  </div>
+
+  <h2 class="lesson-title" id="l3-1"><span class="lesson-number">3.1</span> نظرة عامة على النظام</h2>
+  <p>
+    نظام حقّنا تطبيق ويب مبني بإطار <strong>Django (Python)</strong> مع قاعدة بيانات
+    <strong>SQLite</strong> (يمكن ترقيتها لـ PostgreSQL للإنتاج). يعمل على متصفح أي جهاز،
+    وواجهته بالعربية كاملاً مع دعم RTL.
+  </p>
+
+  <h3>المكوّنات التقنية</h3>
+  <table>
+    <thead><tr><th>المكوّن</th><th>التقنية</th><th>الدور</th></tr></thead>
+    <tbody>
+      <tr><td>الواجهة الخلفية</td><td>Django 5.2 + Python 3.10+</td><td>منطق التطبيق</td></tr>
+      <tr><td>قاعدة البيانات</td><td>SQLite (افتراضي) / PostgreSQL</td><td>تخزين الملفات</td></tr>
+      <tr><td>الواجهة الأمامية</td><td>Bootstrap 5 RTL + Cairo Font</td><td>عرض البيانات</td></tr>
+      <tr><td>التصدير</td><td>openpyxl, HTML print</td><td>Excel و PDF</td></tr>
+      <tr><td>الأمان</td><td>SHA-256, CSRF, جلسات مشفّرة</td><td>حماية البيانات</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l3-2"><span class="lesson-number">3.2</span> التطبيقات الخمسة</h2>
+  <p>النظام مقسّم لـ <strong>5 تطبيقات</strong>، كل تطبيق له مسؤولية واضحة:</p>
+
+  <div class="step-card">
+    <div class="step-num">١</div>
+    <div>
+      <strong>accounts</strong> - إدارة المستخدمين والصلاحيات
+      <ul>
+        <li>نموذج User مخصص بـ 6 أدوار</li>
+        <li>AuditLog لتسجيل كل عملية</li>
+        <li>Middleware يلتقط النشاطات تلقائياً</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٢</div>
+    <div>
+      <strong>survivors</strong> - القلب النابض للنظام
+      <ul>
+        <li>14 نموذج بيانات (الملف، الموافقة، الاعتقال، الشهود، الوثائق، المقابلات، الملاحظات...)</li>
+        <li>منطق احتساب الدرجات الآلي</li>
+        <li>التصدير والإحالة الخارجية</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٣</div>
+    <div>
+      <strong>social_survey</strong> - المسح الاجتماعي للأسرة
+      <ul>
+        <li>7 نماذج (الأسرة، الأبناء، السكن، التعليم، العمل، الصحة، الاحتياجات)</li>
+        <li>قوائم متدرّجة للجغرافيا السورية</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٤</div>
+    <div>
+      <strong>tutorials</strong> - الدروس التفاعلية
+      <ul>
+        <li>6 دروس مع اختبارات</li>
+        <li>تتبّع التقدّم لكل مستخدم</li>
+        <li>جولات تفاعلية على الواجهات الحقيقية</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">٥</div>
+    <div>
+      <strong>core</strong> - الداشبورد والصفحات الرئيسية
+      <ul>
+        <li>إحصاءات شاملة</li>
+        <li>صفحات النظام العامة</li>
+        <li>إعدادات سياقية مشتركة</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="lesson-title" id="l3-3"><span class="lesson-number">3.3</span> نموذج البيانات</h2>
+  <p>
+    البيانات في النظام مرتبطة عبر <strong>علاقات صارمة</strong>. فهم هذه العلاقات يساعدك على إدراك
+    لماذا الترتيب مهم (مثلاً: لا يمكن إضافة شهود قبل إنشاء ملف ناجٍ).
+  </p>
+
+  <h3>التسلسل الهرمي للبيانات</h3>
+  <pre><code>SurvivorProfile (الملف الرئيسي)
+├── InformedConsent (1:1 - موافقة مستنيرة واحدة)
+├── DetentionEvent (1:N - وقائع الاعتقال)
+├── DetentionPeriod (1:N - فترات الاحتجاز)
+│   └── DetentionFacility (FK - الفرع)
+│   └── TortureMethod (M:N - أنماط التعذيب)
+├── ReleaseEvent (1:1 - الإفراج)
+├── Witness (1:N - الشهود)
+├── SupportingDocument (1:N - الوثائق)
+│   └── ChainOfCustodyLog (1:N - سلسلة الحيازة)
+├── MedicalAssessment (1:N - التقييم الطبي)
+├── LongTermImpact (1:1 - الأثر طويل الأمد)
+├── SurvivorNote (1:N - الملاحظات)
+├── Interview (1:N - المقابلات)
+│   └── InterviewMedia (1:N - فيديوهات/صوتيات)
+└── HouseholdSurvey (1:1 - المسح الاجتماعي)
+    ├── Child (1:N - الأبناء)
+    ├── HousingInfo (1:1 - السكن)
+    ├── HealthAccess (1:1 - الصحة)
+    └── NeedsAssessment (1:1 - الاحتياجات)</code></pre>
+
+  <div class="callout callout-info">
+    <div class="callout-title"><i class="bi bi-info"></i> ماذا تعني الأرقام؟</div>
+    <p>
+      <code>1:1</code> = ملف ناجٍ واحد ↔ موافقة واحدة فقط<br>
+      <code>1:N</code> = ملف ناجٍ واحد ↔ عدّة شهود (مفتوح)<br>
+      <code>M:N</code> = فترة احتجاز ↔ عدّة أنماط تعذيب، ونمط التعذيب ↔ عدّة فترات
+    </p>
+  </div>
+
+  <h2 class="lesson-title" id="l3-4"><span class="lesson-number">3.4</span> نظام الصلاحيات والأدوار الستة</h2>
+
+  <table>
+    <thead><tr><th>الدور</th><th>يستطيع</th><th>لا يستطيع</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>👁️ اطلاع فقط</strong><br>(read_only)</td>
+        <td>عرض الملفات، البحث، التصدير</td>
+        <td>إضافة، تعديل، حذف، إحالة</td>
+      </tr>
+      <tr>
+        <td><strong>📝 موثّق ميداني</strong><br>(documenter)</td>
+        <td>إنشاء ملفات، إضافة شهود ووثائق، رفع مقابلات</td>
+        <td>أرشفة، حذف، رؤية الملاحظات السرّية</td>
+      </tr>
+      <tr>
+        <td><strong>👨‍💼 مشرف توثيق</strong><br>(supervisor)</td>
+        <td>كل ما يفعله الموثّق + أرشفة، رؤية الملاحظات السرّية، سجل التدقيق</td>
+        <td>تغيير صلاحيات، استيراد JSON</td>
+      </tr>
+      <tr>
+        <td><strong>🔍 مدقّق/مراجع</strong><br>(reviewer)</td>
+        <td>عرض كل الملفات، سجل التدقيق، تصدير</td>
+        <td>تعديل، حذف، أرشفة</td>
+      </tr>
+      <tr>
+        <td><strong>🛡️ ضابط حماية</strong><br>(protection)</td>
+        <td>تصدير JSON، رؤية كل البيانات، سجل التدقيق</td>
+        <td>تعديل البيانات (غير مسموح للأمانة المهنية)</td>
+      </tr>
+      <tr>
+        <td><strong>👑 مدير النظام</strong><br>(admin)</td>
+        <td>كل شي - إنشاء/تعديل المستخدمين، استيراد، تعطيل حسابات</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l3-5"><span class="lesson-number">3.5</span> سجل التدقيق التلقائي</h2>
+
+  <p>
+    <strong>كل عملية حساسة تُسجَّل آلياً</strong> في جدول AuditLog. النظام يلتقط 9 أنواع من الأنشطة:
+  </p>
+  <ul>
+    <li><strong>VIEW</strong> - اطلاع على ملف</li>
+    <li><strong>CREATE</strong> - إنشاء سجل</li>
+    <li><strong>UPDATE</strong> - تعديل سجل</li>
+    <li><strong>DELETE</strong> - حذف سجل (نادر - معظمها أرشفة)</li>
+    <li><strong>EXPORT</strong> - تصدير ملف</li>
+    <li><strong>DOWNLOAD</strong> - تنزيل وثيقة</li>
+    <li><strong>LOGIN</strong> - تسجيل دخول</li>
+    <li><strong>LOGOUT</strong> - تسجيل خروج</li>
+    <li><strong>FAILED_LOGIN</strong> - محاولة دخول فاشلة</li>
+  </ul>
+
+  <p>كل سجل يحوي: المستخدم، الإجراء، المسار، عنوان IP، المتصفح، الوقت، السجل المستهدف، ملاحظات.</p>
+
+  <div class="callout callout-warning">
+    <div class="callout-title"><i class="bi bi-shield"></i> لماذا هذا مهم؟</div>
+    <p>إذا تسرّبت بيانات أو حدث استخدام مشبوه، AuditLog يُخبرنا بدقة: من فعل ماذا، متى، من أي IP.
+       هذا يحمي الناجين، الموظفين، والمنظمة.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 4 -->
+<!-- ============================================================ -->
+<div class="page" id="m4">
+  <div class="module-number">الوحدة الرابعة</div>
+  <h1 class="module-title"><i class="bi bi-person-plus-fill"></i> عملية التوثيق الكاملة</h1>
+
+  <div class="module-overview">
+    <h4><i class="bi bi-info-circle"></i> نظرة عامة</h4>
+    <p>الآن للجزء العملي. هذه الوحدة تأخذك خطوة بخطوة من فتح صفحة "إنشاء ناجٍ" إلى إكمال
+       كل أقسام الملف. كل درس يشمل: ماذا تدخل، كيف تدخله، أمثلة، أخطاء شائعة.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l4-1"><span class="lesson-number">4.1</span> إنشاء ملف ناجٍ</h2>
+
+  <h3>الحقول الأساسية</h3>
+  <p>صفحة إنشاء الملف صُمّمت لتكون <strong>سريعة ومركّزة</strong> - فقط الحقول الجوهرية.
+     الحقول الأخرى (الاتصال، الصور، الإحالات) تُدخَل لاحقاً في أقسام منفصلة.</p>
+
+  <table>
+    <thead><tr><th>الحقل</th><th>إلزامي؟</th><th>ملاحظات</th></tr></thead>
+    <tbody>
+      <tr><td>رقم القضية</td><td>✓</td><td>النظام يقترح آلياً HQ-YYYY-XXXX. يمكن تعديله.</td></tr>
+      <tr><td>التصنيف</td><td>✓</td><td>ابدأ بـ "مسودة". رفع التصنيف بعد اكتمال البيانات.</td></tr>
+      <tr><td>الاسم الرباعي</td><td>✓</td><td>الاسم، الأب، الجد (اختياري)، العائلة، الأم، الكنية</td></tr>
+      <tr><td>الرقم الوطني</td><td>اختياري</td><td>11 رقم. إن أُدخل يجب أن يكون فريداً.</td></tr>
+      <tr><td>الجنس</td><td>✓</td><td>ذكر / أنثى / آخر</td></tr>
+      <tr><td>محافظة الولادة</td><td>اختياري</td><td>قائمة منسدلة (14 محافظة)</td></tr>
+      <tr><td>الحالة الزوجية وقت الاعتقال</td><td>اختياري</td><td>قائمة منسدلة</td></tr>
+      <tr><td>المحافظة وقت الاعتقال</td><td>اختياري</td><td>قائمة منسدلة</td></tr>
+      <tr><td>فئة المهنة</td><td>اختياري</td><td>21 فئة + حقل تفاصيل اختياري</td></tr>
+      <tr><td>النشاط السياسي</td><td>اختياري</td><td>14 فئة - "لا نشاط" خيار صحيح</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <div class="callout-title"><i class="bi bi-exclamation"></i> الرقم الوطني المكرّر</div>
+    <p>إذا أدخلت رقم وطني مُستخدَم في ملف آخر، النظام يرفض الحفظ ويُخبرك برقم القضية القائمة.
+       هذا يمنع إنشاء ملفات مكرّرة لنفس الشخص.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l4-2"><span class="lesson-number">4.2</span> الموافقة المستنيرة في النظام</h2>
+  <p>
+    <strong>بعد حفظ الملف مباشرة</strong>، النظام يوجّهك إلى صفحة الموافقة المستنيرة.
+    هذا تصميم متعمّد - لا توثيق فعلي قبل الموافقة.
+  </p>
+
+  <h3>أقسام نموذج الموافقة</h3>
+  <ol>
+    <li><strong>الموافقة الأساسية:</strong> هل تم التوقيع؟ التاريخ؟ هل يوجد شاهد؟ تحميل نموذج موقّع.</li>
+    <li><strong>الفهم والإطلاع:</strong>
+      <ul>
+        <li>☑ شُرح حق الانسحاب</li>
+        <li>☑ شُرحت حدود السرّية</li>
+        <li>☑ شُرحت الاستخدامات المحتملة</li>
+      </ul>
+    </li>
+    <li><strong>الموافقة الطبقية (7 جهات):</strong>
+      IIIM، CoI، ICC، ولاية قضائية عالمية، منظمات شريكة، إعلام، نشر علني.
+      الناجي يحدد ✓ أو ✗ لكل جهة.
+    </li>
+    <li><strong>إخفاء الهوية:</strong> الاسم، الصورة، الموقع، تفاصيل العائلة.</li>
+    <li><strong>سحب الموافقة:</strong> حقل مفعّل لاحقاً إن طلب الانسحاب.</li>
+  </ol>
+
+  <div class="callout callout-success">
+    <div class="callout-title"><i class="bi bi-printer"></i> طباعة نموذج الموافقة</div>
+    <p>النظام يولّد نموذج موافقة جاهز للطباعة بصيغة PDF، يحوي كل التفاصيل القانونية باللغة العربية،
+       مع حقول توقيع للناجي والموثّق وشاهد. اطبعه قبل أي مقابلة.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l4-3"><span class="lesson-number">4.3</span> توثيق وقائع الاعتقال</h2>
+
+  <p>
+    <strong>واقعة الاعتقال</strong> ≠ <strong>فترة الاحتجاز</strong>.
+    الواقعة هي حدث الاعتقال نفسه (التاريخ، المكان، الجهة). الفترة هي إقامة في فرع معين.
+  </p>
+
+  <h3>الحقول لكل واقعة</h3>
+  <ul>
+    <li><strong>تاريخ الاعتقال:</strong> دقيق أو تقريبي (مع وضع علامة).</li>
+    <li><strong>مكان الاعتقال:</strong> حاجز، بيت، شارع، عمل... (نص حر).</li>
+    <li><strong>المحافظة:</strong> قائمة منسدلة.</li>
+    <li><strong>الجهة المعتقِلة:</strong> <em>الاسم الكامل</em> مثل "المخابرات الجوية - فرع التحقيق - المطار".</li>
+    <li><strong>تفاصيل العناصر:</strong> أسماء، رتب، علامات مميزة.</li>
+    <li><strong>السبب المُعلَن:</strong> ما قالوه له عن سبب اعتقاله.</li>
+    <li><strong>ظروف الاعتقال:</strong> الوصف التفصيلي (يجب &gt;150 حرف لاكتساب نقطة موثوقية).</li>
+    <li><strong>شهود على الاعتقال:</strong> جيران، عابرو سبيل.</li>
+    <li><strong>هل أُبلغت العائلة؟</strong> Yes/No.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l4-4"><span class="lesson-number">4.4</span> الخط الزمني للاحتجاز</h2>
+
+  <p>
+    لكل فرع/سجن قضى فيه الناجي وقتاً، نُنشئ <strong>فترة احتجاز منفصلة</strong>.
+    استخدم حقل "ترتيب الفترة" لضمان الترتيب الصحيح.
+  </p>
+
+  <h3>الحقول لكل فترة</h3>
+  <ul>
+    <li><strong>الفرع:</strong> من قائمة الـ27 مركز احتجاز المسبقة. إن لم تجد الفرع، أضفه من الأدمن.</li>
+    <li><strong>من تاريخ - إلى تاريخ:</strong> مع علامة "تقريبي" إن لزم.</li>
+    <li><strong>ترتيب الفترة:</strong> 1، 2، 3... لضمان ترتيب الانتقال بين الفروع.</li>
+    <li><strong>وصف الزنزانة:</strong> حجمها، تهويتها، إلخ.</li>
+    <li><strong>عدد المحتجزين معه</strong> في الزنزانة.</li>
+    <li><strong>ظروف الطعام، النوم، النظافة، الرعاية الطبية، التواصل مع الخارج.</strong></li>
+    <li><strong>أنماط التعذيب:</strong> اختيار متعدد من قائمة الـ33 نمط.</li>
+    <li><strong>وصف التعذيب التفصيلي:</strong> &gt;200 حرف للحصول على نقطة موثوقية.</li>
+    <li><strong>عنف جنسي:</strong> Yes/No + تفاصيل (بحساسية).</li>
+    <li><strong>شهد على وفيات:</strong> نص حر بأسماء وتواريخ.</li>
+    <li><strong>معتقلون آخرون شاهدهم:</strong> مصدر محتمل لشهود متقاطعين.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l4-5"><span class="lesson-number">4.5</span> توثيق الإفراج</h2>
+  <p>كل ناجٍ له واقعة إفراج واحدة. الحقول:</p>
+  <ul>
+    <li><strong>تاريخ الإفراج.</strong></li>
+    <li><strong>نوع الإفراج:</strong> غير مشروط، مشروط، عفو عام، تسوية، رشوة، تبادل، فرار، نقل، غير معلوم.</li>
+    <li><strong>مكان الإفراج.</strong></li>
+    <li><strong>قيمة الرشوة</strong> (إن وُجدت).</li>
+    <li><strong>شروط الإفراج:</strong> هل عليه التزامات بعد الإفراج؟</li>
+    <li><strong>الظروف:</strong> وصف تفصيلي لما حدث.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 5 -->
+<!-- ============================================================ -->
+<div class="page" id="m5">
+  <div class="module-number">الوحدة الخامسة</div>
+  <h1 class="module-title"><i class="bi bi-people-fill"></i> الأدلة المتقاطعة وسلسلة الحيازة</h1>
+
+  <div class="module-overview">
+    <h4><i class="bi bi-info-circle"></i> نظرة عامة</h4>
+    <p>هذا هو الفرق بين ملف يُقبل في محكمة دولية وملف يُرفض. الأدلة المتقاطعة وسلسلة الحيازة
+       هما عمودا قابلية القبول القضائي.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l5-1"><span class="lesson-number">5.1</span> الشهود المتقاطعون - القاعدة الذهبية</h2>
+
+  <div class="callout callout-info">
+    <div class="callout-title"><i class="bi bi-star-fill"></i> القاعدة الذهبية</div>
+    <p><strong>شاهدان مستقلان على الأقل، يفضّل ثلاثة، لم يلتقيا قبل التوثيق.</strong></p>
+  </div>
+
+  <h3>أركان "الشاهد المستقل"</h3>
+  <ol>
+    <li>كان معتقلاً في نفس الفرع، في نفس الفترة تقريباً.</li>
+    <li><strong>لم يلتقِ بالناجي بعد الإفراج</strong> قبل الإدلاء بشهادته.</li>
+    <li>لم يقرأ شهادة الناجي أو روايته إعلامياً.</li>
+    <li>يُدلي بشهادته بنفسه، ليس بالنيابة.</li>
+  </ol>
+
+  <h3>الحقول لكل شاهد في النظام</h3>
+  <ul>
+    <li>اسم الشاهد + رقم ملفه (إن كان موثقاً عندنا) + هاتفه + موقعه الحالي.</li>
+    <li>الفرع الذي رآه فيه + من تاريخ إلى تاريخ + رقم الزنزانة.</li>
+    <li>كيف تعرّف عليه؟ (الاسم، الوجه، حادثة معينة).</li>
+    <li>تفاصيل مميزة لاحظها (صفات جسدية، أقوال).</li>
+    <li>علاقته بالناجي قبل الاعتقال (غريب، معرفة، قريب، زميل).</li>
+    <li>هل شاهد مستقل؟ + هل التقيا بعد الإفراج؟</li>
+    <li>موافقة على استخدام شهادته + بيان موقّع.</li>
+    <li>نص الشهادة الكامل.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l5-2"><span class="lesson-number">5.2</span> تصنيف الوثائق - هرمية الأدلة</h2>
+  <table>
+    <thead><tr><th>المستوى</th><th>النوع</th><th>أمثلة</th></tr></thead>
+    <tbody>
+      <tr><td>★★★★★</td><td>وثيقة رسمية من النظام</td><td>أمر اعتقال، أمر إفراج، حكم محكمة عسكرية</td></tr>
+      <tr><td>★★★★</td><td>وثيقة قضائية دولية</td><td>وثيقة من IIIM، شهادة كوبلنز، إحالات ICC</td></tr>
+      <tr><td>★★★★</td><td>وثيقة مسرّبة</td><td>صور قيصر، ملفات سيزر، تسريبات الفروع</td></tr>
+      <tr><td>★★★</td><td>وثائق العائلة</td><td>كرت زيارة، حوالة مالية، أوراق محامٍ</td></tr>
+      <tr><td>★★★</td><td>تقييم طبي</td><td>تقرير LDHR، صور الندوب، تقرير نفسي</td></tr>
+      <tr><td>★★</td><td>أدلة سياقية</td><td>صور قبل الاعتقال، منشورات سوشيال</td></tr>
+    </tbody>
+  </table>
+
+  <h3>الحقول لكل وثيقة في النظام</h3>
+  <ul>
+    <li>نوع الوثيقة (16 نوع متاح).</li>
+    <li>عنوان + وصف + الملف نفسه.</li>
+    <li>مصدر الوثيقة وكيفية الحصول عليها (سلسلة الحيازة).</li>
+    <li>تاريخ الاستلام + استلمها مَن.</li>
+    <li>للوثائق الرسمية: الرقم المرجعي، التاريخ، الجهة المُصدرة.</li>
+    <li>للوثائق المسرّبة: الرابط الأصلي، النسخة المؤرشفة، وقت الوصول، التحليل الجنائي.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l5-3"><span class="lesson-number">5.3</span> سلسلة الحيازة</h2>
+  <p>
+    <strong>Chain of Custody</strong> = سجل كامل لكل من لمس الوثيقة منذ المصدر حتى الآن.
+    أي ثغرة في السلسلة قد تُسقط الوثيقة قضائياً.
+  </p>
+
+  <h3>عناصر السلسلة</h3>
+  <ol>
+    <li><strong>المصدر الأصلي:</strong> من أعطى الوثيقة؟ متى؟ أين؟ بأي ظروف؟</li>
+    <li><strong>كل تنقّل لاحق:</strong> من نقلها لمن؟ بتوقيع الطرفين.</li>
+    <li><strong>التخزين:</strong> أين خُزّنت؟ من له صلاحية الوصول؟</li>
+    <li><strong>أي وصول لاحق:</strong> من اطّلع عليها، متى، ولماذا؟</li>
+  </ol>
+
+  <p>النظام يحوي جدول <strong>ChainOfCustodyLog</strong> منفصل يسجّل لكل وثيقة:</p>
+  <ul>
+    <li>الإجراء (استلام، نقل، اطلاع، نسخ، مشاركة خارجية، أرشفة، تحقق).</li>
+    <li>المنفّذ + التاريخ + المكان + المستلِم.</li>
+    <li>توقيع (يمكن رفعه كصورة).</li>
+    <li>ملاحظات.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l5-4"><span class="lesson-number">5.4</span> بصمات SHA-256</h2>
+  <p>
+    <strong>SHA-256</strong> خوارزمية تشفير تنتج "بصمة" فريدة لكل ملف. أي تغيير في الملف
+    (حتى حرف واحد) يغيّر البصمة كلياً. النظام يحسبها <strong>آلياً</strong> عند رفع كل ملف.
+  </p>
+  <div class="example">
+    <span class="example-label">مثال</span>
+    <strong>الملف الأصلي:</strong> <code>arrest_warrant.pdf</code><br>
+    <strong>SHA-256:</strong> <code>5e3b2a8f...c4d</code> (64 حرفاً وأرقاماً)<br>
+    <strong>بعد تعديل أي حرف:</strong> البصمة تصبح مختلفة تماماً → دليل على التلاعب.
+  </div>
+
+  <h2 class="lesson-title" id="l5-5"><span class="lesson-number">5.5</span> بروتوكول بيركلي للوثائق الرقمية</h2>
+  <p>إذا كانت الوثيقة من الإنترنت (تسريبات، صور قيصر، فيديوهات يوتيوب)، يجب:</p>
+  <ol>
+    <li>حفظ الرابط الأصلي (URL) كما هو.</li>
+    <li>أرشفة الصفحة عبر <code>archive.org</code> وحفظ رابط النسخة المؤرشفة.</li>
+    <li>تسجيل تاريخ ووقت الوصول (متى عثرت عليها؟).</li>
+    <li>التحقق من الميتاداتا (تاريخ الإنشاء، الكاميرا، الموقع).</li>
+    <li>وصف التحليل الجنائي/التقني إن أُجري.</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 6 -->
+<!-- ============================================================ -->
+<div class="page" id="m6">
+  <div class="module-number">الوحدة السادسة</div>
+  <h1 class="module-title"><i class="bi bi-camera-video-fill"></i> المقابلات والوسائط المتعددة</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>المقابلة هي اللحظة التي يتحوّل فيها الناجي من شخص يحمل ألماً إلى صانع شهادة موثّقة.
+       كيف نُدير هذه اللحظة بكرامة ودقة، وكيف نحفظ تسجيلها للأبد.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l6-1"><span class="lesson-number">6.1</span> منهجيات المقابلات</h2>
+  <p>النظام يدعم 6 منهجيات:</p>
+  <ul>
+    <li><strong>بروتوكول إسطنبول:</strong> المعيار الذهبي - أسئلة قياسية تغطي كل جوانب التعذيب.</li>
+    <li><strong>شبه منظمة:</strong> أسئلة محورية مرنة، تترك مساحة للناجي.</li>
+    <li><strong>سردية مفتوحة:</strong> الناجي يحكي بحرّيته، الموثّق يستمع ويُوجّه.</li>
+    <li><strong>استمارة منظمة:</strong> أسئلة محدّدة الإجابات (للإحصاء).</li>
+    <li><strong>مقابلة متابعة:</strong> قصيرة، لتحديث ملف موجود.</li>
+    <li><strong>أخرى:</strong> تركيب أو منهجية مخصصة.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l6-2"><span class="lesson-number">6.2</span> تعدد المقابلات</h2>
+  <p>
+    لنفس الناجي يمكن أن يكون لديك <strong>عدّة مقابلات</strong> عبر الزمن (متابعات، استكمالات).
+    النظام يرقّمها 1، 2، 3 ويحدّد "المقابلة الأولى" (المقابلة الكاملة الأساسية).
+  </p>
+  <h3>الحقول لكل مقابلة</h3>
+  <ul>
+    <li>رقم المقابلة + هل هي المقابلة الأولى؟</li>
+    <li>تاريخ المقابلة + المدة بالدقائق.</li>
+    <li>نوع المكان (مكتب، منزل، عن بُعد، هاتفية، ميدان).</li>
+    <li>اللغة (8 خيارات: العربية الفصحى، الشامية، الكردية، الإنجليزية...).</li>
+    <li>المنهجية المتّبعة.</li>
+    <li>المحاوِر + مدوِّن الملاحظات.</li>
+    <li>مسجَّلة؟ موافقة على التسجيل؟ موافقة على النشر؟</li>
+    <li>ملخص المقابلة + اعتبارات النوع الاجتماعي + إحالة نفسية بعد المقابلة.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l6-3"><span class="lesson-number">6.3</span> رفع وإدارة الفيديوهات</h2>
+  <p>لكل مقابلة، يمكن رفع <strong>وسائط متعددة</strong>: فيديوهات، صوتيات، نصوص حرفية، صور، مستندات ملخص.</p>
+
+  <h3>حدود الحجم</h3>
+  <table>
+    <thead><tr><th>نوع الوسيط</th><th>الحجم الأقصى</th><th>الامتدادات المسموحة</th></tr></thead>
+    <tbody>
+      <tr><td>فيديو</td><td>200 ميغا</td><td>mp4, mov, webm, mkv, avi</td></tr>
+      <tr><td>صوت</td><td>50 ميغا</td><td>mp3, m4a, ogg, wav, aac</td></tr>
+      <tr><td>صور</td><td>10 ميغا</td><td>jpg, png, webp, heic</td></tr>
+      <tr><td>مستندات</td><td>30 ميغا</td><td>pdf, docx, odt, txt</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-warning">
+    <div class="callout-title"><i class="bi bi-shield-exclamation"></i> ملفات ممنوعة</div>
+    <p>النظام يرفض آلياً امتدادات خطرة: <code>.exe</code>, <code>.sh</code>, <code>.js</code>,
+       <code>.html</code>, <code>.svg</code>, إلخ. هذه الحماية ضرورية لمنع الاختراقات.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l6-4"><span class="lesson-number">6.4</span> اعتبارات النوع الاجتماعي</h2>
+  <p>
+    <strong>لا تُجرِ مقابلة لناجية حول العنف الجنسي إلا بحضور موثّقة أنثى.</strong>
+    هذا ليس تحيّزاً، بل احترام لكرامة الناجية وفرصة لها للحديث بأمان.
+    الأمر نفسه لذكور تعرّضوا لعنف جنسي.
+  </p>
+  <p>النظام يحتوي على حقل "روعيت اعتبارات النوع الاجتماعي" في كل مقابلة - علّمه إن كان منطبقاً.</p>
+
+  <h2 class="lesson-title" id="l6-5"><span class="lesson-number">6.5</span> التقييم الطبي وفق إسطنبول</h2>
+  <p>
+    التقييم الطبي يُجريه <strong>طبيب مدرّب على إسطنبول</strong> (عادةً من LDHR).
+    المتطوّع لا يُجريه، بل يُحيل ويسجّل النتيجة.
+  </p>
+
+  <h3>تصنيف التوافق - 6 مستويات إسطنبولية</h3>
+  <ol>
+    <li><strong>لم يُقَيَّم</strong> (الافتراضي).</li>
+    <li><strong>غير متوافق</strong> - الإصابات لا تتوافق مع الرواية.</li>
+    <li><strong>متوافق</strong> - الإصابات تتوافق لكن قد يكون لها أسباب أخرى.</li>
+    <li><strong>متوافق بدرجة عالية</strong> - السبب المُدعى أحد الأسباب الأكثر احتمالاً.</li>
+    <li><strong>نمطي</strong> - الإصابات مطابقة تماماً لنوع التعذيب المُدعى.</li>
+    <li><strong>تشخيصي</strong> - الإصابات دليل قاطع لا يمكن أن يكون له سبب آخر.</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 7 -->
+<!-- ============================================================ -->
+<div class="page" id="m7">
+  <div class="module-number">الوحدة السابعة</div>
+  <h1 class="module-title"><i class="bi bi-house-heart-fill"></i> المسح الاجتماعي للأسرة</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>توثيق التعذيب وحده لا يكفي - الناجي وعائلته يحتاجون لدعم اجتماعي. المسح الاجتماعي
+       يرسم صورة شاملة لوضع الأسرة بعد الإفراج لتمكين المساعدة المستهدفة.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l7-1"><span class="lesson-number">7.1</span> أهداف المسح الاجتماعي</h2>
+  <ul>
+    <li>تحديد الاحتياجات الفعلية للأسرة بعد الإفراج.</li>
+    <li>توجيه برامج المساعدة بدقة (مالية، طبية، تعليمية).</li>
+    <li>قياس الأثر طويل الأمد للاعتقال على العائلة.</li>
+    <li>تحديد الأبناء المتضرّرين دراسياً وصحياً.</li>
+    <li>توثيق التهجير القسري والحرمان من السكن.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l7-2"><span class="lesson-number">7.2</span> بيانات الأسرة والأبناء</h2>
+  <h3>بيانات الأسرة (HouseholdSurvey)</h3>
+  <ul>
+    <li>الحالة الزوجية الحالية + هل تغيرت بسبب الاعتقال؟</li>
+    <li>الزوج/ة: الاسم، العمر، حياً؟ معتقَل؟ يعمل؟ مهنته؟</li>
+    <li>حجم الأسرة + عدد المعالين + عدد الأبناء.</li>
+    <li>وضع التهجير: لم يُهجَّر، نازح داخلي، لاجئ، عائد، طالب لجوء.</li>
+    <li>عدد مرات التهجير + المحافظة الأصلية + الحالية.</li>
+  </ul>
+
+  <h3>بيانات الأبناء (Child)</h3>
+  <p>لكل ابن/ابنة:</p>
+  <ul>
+    <li>الاسم، الجنس، تاريخ الميلاد أو العمر.</li>
+    <li>التعليم: في المدرسة؟ المرحلة؟ ترك الدراسة؟ السنة؟ السبب؟</li>
+    <li><strong>ترك بسبب اعتقال الأب/الأم؟</strong> (مؤشر هام).</li>
+    <li>الصحة: إعاقة؟ مرض مزمن؟ معاناة نفسية؟</li>
+    <li>العمل: طالب فقط، يساعد الأسرة، عمالة أطفال، عمل في الشارع، صبي مهنة، عمل منتظم.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l7-3"><span class="lesson-number">7.3</span> السكن - الجغرافيا المتدرّجة</h2>
+  <p>
+    قسم السكن يستخدم <strong>قوائم متدرّجة</strong>: المحافظة → المدينة → الحي.
+    عند اختيار محافظة، تظهر مدنها فقط. عند اختيار مدينة، تظهر أحياؤها.
+  </p>
+
+  <h3>التغطية الجغرافية</h3>
+  <ul>
+    <li>14 محافظة سورية كاملة.</li>
+    <li>~140 مدينة وبلدة.</li>
+    <li>أحياء تفصيلية للمدن الكبرى (دمشق 25، حلب 22، حمص 20، اللاذقية 41، حماة 9...).</li>
+  </ul>
+
+  <h3>بيانات السكن</h3>
+  <ul>
+    <li>نوع السكن: ملك، إيجار، مع أهل، سكن مشترك، مخيم نازحين، مخيم لاجئين، بلا مأوى...</li>
+    <li>للإيجار: المبلغ، العملة، متأخرات، مهدّد بالإخراج؟</li>
+    <li>وصف المسكن: عدد الغرف، عدد القاطنين، الحالة العامة.</li>
+    <li>المرافق: كهرباء (ساعات يومياً)، ماء، تدفئة، صرف صحي، إنترنت.</li>
+    <li>المنزل الأصلي: هل كان يملك منزلاً قبل التهجير؟ ما حاله الآن؟</li>
+    <li>المصادرة: هل صودرت ممتلكاته؟</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l7-4"><span class="lesson-number">7.4</span> التعليم والعمل والدخل</h2>
+  <h3>تعليم الناجي (EducationStatus)</h3>
+  <ul>
+    <li>أعلى مستوى قبل الاعتقال + المستوى الحالي.</li>
+    <li>هل انقطع بسبب الاعتقال؟</li>
+    <li>التخصص، المؤسسة.</li>
+    <li>هل يدرس حالياً؟ يرغب باستئناف التعليم؟ ما العقبات؟</li>
+    <li>اللغات التي يجيدها.</li>
+    <li>هل فقد شهاداته بسبب الاعتقال/التهجير؟</li>
+  </ul>
+
+  <h3>وضع العمل والدخل (EmploymentInfo)</h3>
+  <ul>
+    <li>وضع العمل (10 خيارات: عمل رسمي، غير رسمي، حر، مياومة، عاطل، غير قادر صحياً...).</li>
+    <li>المهنة قبل الاعتقال + المهنة الحالية + هل عاد لنفس المهنة؟</li>
+    <li>هل غير قادر بسبب صحة من الاعتقال؟ بسبب أمني/قانوني؟</li>
+    <li>الدخل الشهري + العملة (4 خيارات).</li>
+    <li>يغطي الاحتياجات الأساسية؟</li>
+    <li>مصادر دخل: راتب، تجارة، تقاعد، حوالات، مساعدات إنسانية، مساعدات من الأهل.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l7-5"><span class="lesson-number">7.5</span> الصحة وتقييم الاحتياجات</h2>
+  <h3>الصحة (HealthAccess)</h3>
+  <ul>
+    <li>تأمين صحي، وصول للرعاية الأولية والمتخصصة.</li>
+    <li>بُعد أقرب مرفق صحي بالكيلومترات.</li>
+    <li>أمراض مزمنة في الأسرة، ذوو إعاقة.</li>
+    <li>الدعم النفسي، الأدوية، الاحتياجات غير المُلبّاة.</li>
+    <li>الأمن الغذائي (4 مستويات: جيد، متوسط، ضعيف، حاد).</li>
+    <li>الوجبات اليومية.</li>
+  </ul>
+
+  <h3>تقييم الاحتياجات (NeedsAssessment)</h3>
+  <p>أولوية كل احتياج (5 مستويات: حرج، عالي، متوسط، منخفض، لا حاجة):</p>
+  <ul>
+    <li>مالية، غذائية، إسكان، طبية، دعم نفسي، قانونية، تعليم الأبناء، تدريب مهني، استرداد وثائق.</li>
+  </ul>
+  <p>تفاصيل قانونية: هل يحتاج هوية، دفتر عائلة، جواز، شهادة ميلاد، إخراج قيد، تسوية أمنية؟</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 8 -->
+<!-- ============================================================ -->
+<div class="page" id="m8">
+  <div class="module-number">الوحدة الثامنة</div>
+  <h1 class="module-title"><i class="bi bi-graph-up-arrow"></i> نظام التقييم الذكي</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>النظام يحسب 3 درجات آلياً لكل ملف بناءً على البيانات المُدخَلة. هذه ليست أرقاماً عشوائية -
+       بل مقاييس قياسية تقول للموثّق: "هذا الملف جاهز للمحكمة الدولية" أو "يحتاج المزيد".</p>
+  </div>
+
+  <h2 class="lesson-title" id="l8-1"><span class="lesson-number">8.1</span> آلية الحساب الآلي</h2>
+  <p>الدرجات الثلاث تُحدَّث <strong>تلقائياً</strong> عبر signals عند كل تعديل في البيانات.
+     لا يوجد إدخال يدوي للدرجات. هذا يضمن الموضوعية.</p>
+  <ul>
+    <li><strong>الموثوقية:</strong> اتساق الرواية وتفصيلها.</li>
+    <li><strong>التحقق المتقاطع:</strong> شهود + وثائق + أدلة طبية.</li>
+    <li><strong>الاكتمال:</strong> أقسام الملف الأساسية مغطّاة.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l8-2"><span class="lesson-number">8.2</span> معايير الموثوقية الخمسة</h2>
+  <table>
+    <thead><tr><th>المعيار</th><th>كيف تستوفيه؟</th></tr></thead>
+    <tbody>
+      <tr><td>+1 فترة احتجاز موثّقة</td><td>أنشئ فترة احتجاز واحدة على الأقل.</td></tr>
+      <tr><td>+1 وصف تعذيب &gt;200 حرف</td><td>حقل "وصف تفصيلي للتعذيب" في فترة الاحتجاز.</td></tr>
+      <tr><td>+1 ظروف اعتقال &gt;150 حرف</td><td>حقل "ظروف الاعتقال بالتفصيل" في واقعة الاعتقال.</td></tr>
+      <tr><td>+1 مقابلة أولى مُسجَّلة</td><td>سجل Interview منفصل، علّم "المقابلة الأولى".</td></tr>
+      <tr><td>+1 مقابلة بتسجيل</td><td>فعّل "مسجَّلة" في المقابلة.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l8-3"><span class="lesson-number">8.3</span> معايير التحقق المتقاطع الخمسة</h2>
+  <table>
+    <thead><tr><th>المعيار</th><th>كيف تستوفيه؟</th></tr></thead>
+    <tbody>
+      <tr><td>+1 شاهد مستقل أول</td><td>شاهد بـ "مستقل" + "موافقة موقّعة".</td></tr>
+      <tr><td>+1 شاهد مستقل ثانٍ</td><td>شاهد ثانٍ مستقل.</td></tr>
+      <tr><td>+1 وثيقة رسمية</td><td>أمر اعتقال، إفراج، حكم، وثيقة دولية...</td></tr>
+      <tr><td>+1 تقييم طبي إسطنبول</td><td>تقييم طبي مع علامة "متوافق إسطنبول".</td></tr>
+      <tr><td>+1 وثيقة ببصمة SHA-256</td><td>أي وثيقة - البصمة تُحسب آلياً.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l8-4"><span class="lesson-number">8.4</span> معايير الاكتمال الخمسة</h2>
+  <table>
+    <thead><tr><th>المعيار</th><th>كيف تستوفيه؟</th></tr></thead>
+    <tbody>
+      <tr><td>+1 هوية كاملة</td><td>الاسم الرباعي + الجنس.</td></tr>
+      <tr><td>+1 موافقة مكتملة</td><td>موافقة موثّقة + شُرح الانسحاب والسرّية والاستخدامات.</td></tr>
+      <tr><td>+1 واقعة اعتقال</td><td>واحدة على الأقل.</td></tr>
+      <tr><td>+1 فترة احتجاز</td><td>واحدة على الأقل.</td></tr>
+      <tr><td>+1 بيانات الإفراج</td><td>تبويب الإفراج مكتمل.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l8-5"><span class="lesson-number">8.5</span> من فئة C إلى A - خارطة طريق</h2>
+  <ol>
+    <li><strong>الخطوة 1 (للاكتمال):</strong> أكمل البيانات الأساسية والموافقة. <em>+2 اكتمال</em></li>
+    <li><strong>الخطوة 2:</strong> أضف واقعة، فترة، إفراج. <em>+3 اكتمال = 5/5 ✓</em></li>
+    <li><strong>الخطوة 3 (للموثوقية):</strong> وصف اعتقال &gt;150 حرف + تعذيب &gt;200 حرف. <em>+2</em></li>
+    <li><strong>الخطوة 4:</strong> أضف Interview علّمه أول + مسجَّلة. <em>+2 موثوقية = 4-5/5</em></li>
+    <li><strong>الخطوة 5 (للتحقق):</strong> شاهدان مستقلان. <em>+2</em></li>
+    <li><strong>الخطوة 6:</strong> وثيقة + رسمية + تقييم طبي. <em>+3 = 5/5 ✓</em></li>
+  </ol>
+
+  <div class="callout callout-success">
+    <div class="callout-title"><i class="bi bi-trophy-fill"></i> الهدف</div>
+    <p><strong>5/5/5 = درجة إجمالية 5.0</strong> = ملف فئة A جاهز لأي محكمة دولية.</p>
+  </div>
+
+  <h3>التصنيفات الأربعة</h3>
+  <ul>
+    <li><strong>مسودة:</strong> قيد الجمع.</li>
+    <li><strong>فئة C:</strong> أرشيف/إحصاء فقط.</li>
+    <li><strong>فئة B:</strong> جاهز للـ IIIM ولجنة التحقيق.</li>
+    <li><strong>فئة A:</strong> جاهز للمحاكم الدولية (كوبلنز، ICC...).</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 9 -->
+<!-- ============================================================ -->
+<div class="page" id="m9">
+  <div class="module-number">الوحدة التاسعة</div>
+  <h1 class="module-title"><i class="bi bi-send-fill"></i> التصدير والإحالة للجهات الخارجية</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>الملف الموثّق لا قيمة له إن بقي في النظام. هذه الوحدة تعلّمك كيف تُصدّره وتُحيله للجهات
+       المعنية بصيغ احترافية.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l9-1"><span class="lesson-number">9.1</span> تصدير Excel بأعمدة مخصصة</h2>
+  <p>
+    صفحة التصدير تتيح اختيار من <strong>40+ عمود متاح</strong>:
+    بيانات الناجي، الاحتجاز، الشهود، الوثائق، المسح الاجتماعي، الدرجات...
+  </p>
+  <h3>الخطوات</h3>
+  <ol>
+    <li>افتح <code>/survivors/</code> وفلتر النتائج (اختياري).</li>
+    <li>اضغط زر "تصدير".</li>
+    <li>اختر الأعمدة (افتراضي / كل / مخصص).</li>
+    <li>اضغط "Excel" للحصول على ملف .xlsx بدعم RTL.</li>
+  </ol>
+  <div class="callout callout-info">
+    <div class="callout-title"><i class="bi bi-info"></i> فوائد</div>
+    <p>Excel هو الصيغة المفضّلة للمنظمات الشريكة لأنه: قابل للتعديل، يدعم الإحصاء،
+       يفتح في معظم البرامج.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l9-2"><span class="lesson-number">9.2</span> تصدير PDF والطباعة</h2>
+  <p>النظام يوفّر 3 أنواع PDF:</p>
+  <ul>
+    <li><strong>قائمة الناجين:</strong> جدول بالأعمدة المختارة (للطباعة كقائمة).</li>
+    <li><strong>ملف ناجٍ كامل:</strong> صفحة كاملة لكل ناجٍ مع كل الأقسام.</li>
+    <li><strong>نموذج الموافقة:</strong> جاهز للطباعة وتوقيع الناجي.</li>
+  </ul>
+  <p>التقنية: HTML print - يفتح المتصفح صفحة جاهزة، اضغط Ctrl+P واحفظ كـ PDF.</p>
+
+  <h2 class="lesson-title" id="l9-3"><span class="lesson-number">9.3</span> تصدير واستيراد JSON</h2>
+  <p><strong>JSON = صيغة نسخ احتياطي شاملة.</strong> تحوي كل بيانات الناجين (ليس الملفات الفيزيائية).</p>
+  <h3>التصدير</h3>
+  <p>للأدمن أو ضباط الحماية فقط: <code>/survivors/export/json/</code></p>
+  <h3>الاستيراد</h3>
+  <p>للأدمن فقط: <code>/survivors/import/json/</code> - يتحقق من السلامة:</p>
+  <ul>
+    <li>الملف صيغة JSON صحيحة.</li>
+    <li>كل عنصر بصيغة Django dumpdata.</li>
+    <li>النماذج المسموحة فقط (AuditLog و ChainOfCustodyLog ممنوع استيرادهما).</li>
+    <li>استراتيجيتان: تخطّي الموجود (آمن) أو تحديث (يُسجَّل في التدقيق).</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l9-4"><span class="lesson-number">9.4</span> الإحالة للـ15 جهة معتمدة</h2>
+  <p>افتح صفحة الناجي → اضغط زر "إحالة لجهة خارجية" → تظهر الجهات الـ15 مصنّفة.</p>
+  <p>كل جهة لها صلاحية موافقة محددة. النظام يتحقق آلياً قبل السماح بالإحالة.</p>
+
+  <h2 class="lesson-title" id="l9-5"><span class="lesson-number">9.5</span> حزمة الإحالة الرسمية</h2>
+  <p>بعد اختيار الجهة، النظام يولّد <strong>حزمة إحالة</strong> تحوي:</p>
+  <ol>
+    <li><strong>صفحة الغلاف:</strong> شريط CONFIDENTIAL أحمر + رقم إحالة فريد <code>HQ-TX-...</code></li>
+    <li><strong>خطاب رسمي:</strong> موجّه للجهة باسم الجمعية.</li>
+    <li><strong>إقرار الموافقة:</strong> يوضح أن الناجي وافق على المشاركة مع هذه الجهة بالذات.</li>
+    <li><strong>ملخص الملف:</strong> الجنس، المحافظة، عدد الفترات، عدد الشهود، الدرجة.</li>
+    <li><strong>الملف الكامل:</strong> هوية، اعتقال، إفراج، شهود، وثائق، تقييمات، مقابلات.</li>
+    <li><strong>توقيعات:</strong> الموثّق، المُحيل، المدير، الختم.</li>
+  </ol>
+  <p>كل إحالة تُسجَّل في AuditLog مع رقم المرجع، اسم الجهة، الوقت.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 10 -->
+<!-- ============================================================ -->
+<div class="page" id="m10">
+  <div class="module-number">الوحدة العاشرة</div>
+  <h1 class="module-title"><i class="bi bi-shield-lock-fill"></i> الأمن وحماية البيانات</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>أنت تتعامل مع بيانات بالغة الحساسية. تسرّبها قد يكلّف الناجي حياته. هذه الوحدة
+       تشرح كيف يحمي النظام البيانات، وما هي مسؤولياتك للحفاظ عليها.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l10-1"><span class="lesson-number">10.1</span> تأمين الحسابات والصلاحيات</h2>
+  <ul>
+    <li>كلمات مرور قوية: 10 أحرف على الأقل، تجنّب الكلمات الشائعة.</li>
+    <li>غيّر كلمة المرور الافتراضية فور أول تسجيل دخول.</li>
+    <li>لا تشارك حسابك مع أي شخص.</li>
+    <li>اخرج (logout) عند ترك الجهاز.</li>
+    <li>الجلسات تنتهي آلياً بعد 4 ساعات.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l10-2"><span class="lesson-number">10.2</span> سجل التدقيق</h2>
+  <p>
+    AuditLog يسجّل كل عملية على البيانات الحساسة. <strong>هذا حماية لك أيضاً</strong> -
+    يثبت أنك قمت بعملك بشكل صحيح.
+  </p>
+  <ul>
+    <li>الوصول: قائمة "سجل التدقيق" في الـnavbar (للمشرفين والمراجعين).</li>
+    <li>يعرض آخر 500 نشاط.</li>
+    <li>كل سجل: المستخدم، الإجراء، السجل المستهدف، IP، الوقت.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l10-3"><span class="lesson-number">10.3</span> التحقق من ملفات الرفع</h2>
+  <p>النظام يرفض آلياً:</p>
+  <ul>
+    <li>الامتدادات الخطرة: <code>.exe, .sh, .bat, .js, .html, .php, .svg</code>...</li>
+    <li>الملفات الأكبر من الحد المسموح (حسب النوع).</li>
+    <li>ملفات JSON ذات نماذج خارج القائمة البيضاء.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l10-4"><span class="lesson-number">10.4</span> الأرشفة الآمنة بدلاً من الحذف</h2>
+  <p>
+    <strong>لا يوجد زر "حذف" لملف الناجي.</strong> بدلاً منه: زر "أرشفة" (للمشرفين فقط).
+    لماذا؟ متطلبات IIIM/ICC: سلامة الأدلة، الـchain of custody يجب ألا تنقطع.
+  </p>
+  <h3>كيف تعمل الأرشفة</h3>
+  <ul>
+    <li>الملف يحصل على علامة <code>is_archived = True</code>.</li>
+    <li>يختفي من القائمة العامة، الإحصاءات، الإحالات.</li>
+    <li>البيانات تبقى كاملة في القاعدة.</li>
+    <li>قابل للاستعادة من قبل المدير.</li>
+    <li>متاح في الأرشيف من قائمة الـnavbar.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l10-5"><span class="lesson-number">10.5</span> التشفير والنسخ الاحتياطي</h2>
+  <ul>
+    <li><strong>كلمات المرور:</strong> مشفّرة بـ Django's PBKDF2.</li>
+    <li><strong>الجلسات:</strong> ملفات تعريف الارتباط HttpOnly، CSRF protected.</li>
+    <li><strong>الملفات:</strong> بصمة SHA-256 على كل وثيقة ومقابلة.</li>
+    <li><strong>للإنتاج:</strong> يُنصح بـ HTTPS، تشفير قاعدة البيانات على القرص، نسخ احتياطية يومية مشفّرة.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 11 -->
+<!-- ============================================================ -->
+<div class="page" id="m11">
+  <div class="module-number">الوحدة الحادية عشرة</div>
+  <h1 class="module-title"><i class="bi bi-gear-fill"></i> التشغيل والصيانة</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>للمدير التقني والمشرف. كيف تنصّب النظام من الصفر، تديره، تستكشف المشاكل، وتُحدّثه.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l11-1"><span class="lesson-number">11.1</span> التنصيب والإعداد الأولي</h2>
+  <p>سكربت التشغيل الذكي يقوم بكل شيء:</p>
+  <pre><code># Linux/Mac
+./run.sh
+
+# Windows
+run.bat
+
+# Make
+make run</code></pre>
+  <p>السكربت يقوم بـ:</p>
+  <ol>
+    <li>التحقق من Python 3.10+.</li>
+    <li>إنشاء بيئة افتراضية <code>.venv</code>.</li>
+    <li>تثبيت كل المتطلبات من <code>requirements.txt</code>.</li>
+    <li>تطبيق الـ migrations.</li>
+    <li>التحقق من سلامة المخطط (وإصلاح القديم إن وُجد).</li>
+    <li>إنشاء حساب admin (admin / haqquna2026).</li>
+    <li>بذر 27 مركز احتجاز + 33 نمط تعذيب.</li>
+    <li>تشغيل السيرفر على المنفذ 8000.</li>
+  </ol>
+
+  <h3>متغيرات البيئة</h3>
+  <pre><code>PORT=9000 ./run.sh              # منفذ مختلف
+HOST=127.0.0.1 ./run.sh         # محلي فقط
+SKIP_DEPS=1 ./run.sh            # بدون تثبيت
+ADMIN_PASSWORD='Strong@123' ./run.sh
+NO_VENV=1 ./run.sh              # بدون venv</code></pre>
+
+  <h2 class="lesson-title" id="l11-2"><span class="lesson-number">11.2</span> إدارة المستخدمين</h2>
+  <p>المدير يستطيع:</p>
+  <ul>
+    <li>إنشاء حسابات جديدة: <code>/accounts/register/</code></li>
+    <li>تعديل الأدوار: <code>/admin/accounts/user/</code></li>
+    <li>تعطيل حسابات (دون حذف للحفاظ على سجل التدقيق).</li>
+    <li>إعادة ضبط كلمات المرور.</li>
+    <li>متابعة توقيع اتفاقية السرّية والتدريب.</li>
+  </ul>
+
+  <h3>إنشاء admin من command line</h3>
+  <pre><code>python manage.py create_admin \
+    --username new_admin \
+    --password 'NewStrong@123' \
+    --full-name 'الاسم الكامل'</code></pre>
+
+  <h2 class="lesson-title" id="l11-3"><span class="lesson-number">11.3</span> استكشاف الأخطاء</h2>
+  <table>
+    <thead><tr><th>المشكلة</th><th>الحل</th></tr></thead>
+    <tbody>
+      <tr><td>"no such column" عند الفتح</td><td>قاعدة قديمة - السكربت يكتشفها ويُعيد البناء آلياً.</td></tr>
+      <tr><td>كلمة المرور لا تعمل</td><td><code>python manage.py create_admin --password 'New'</code></td></tr>
+      <tr><td>الجلسة تنتهي بسرعة</td><td>عدّل <code>SESSION_COOKIE_AGE</code> في settings.</td></tr>
+      <tr><td>الملفات الكبيرة لا تُرفع</td><td>تحقق من <code>DATA_UPLOAD_MAX_MEMORY_SIZE</code>.</td></tr>
+      <tr><td>عربي معطّل</td><td>تحقق من <code>LANGUAGE_CODE = "ar"</code> و <code>dir="rtl"</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l11-4"><span class="lesson-number">11.4</span> النسخ الاحتياطية</h2>
+  <h3>يومية</h3>
+  <pre><code>make backup
+# ينتج: backups/backup_YYYYMMDD_HHMMSS.json</code></pre>
+
+  <h3>الملفات الفيزيائية</h3>
+  <pre><code># نسخ احتياطي كامل
+tar -czf hq-backup-$(date +%Y%m%d).tar.gz \
+    db.sqlite3 media/ static/</code></pre>
+
+  <h3>الاستعادة</h3>
+  <pre><code># من JSON
+python manage.py loaddata backups/backup_YYYYMMDD.json
+
+# من القاعدة كاملة
+cp /backups/db.sqlite3 .</code></pre>
+
+  <div class="callout callout-warning">
+    <div class="callout-title"><i class="bi bi-shield"></i> تنبيه</div>
+    <p>النسخ الاحتياطية يجب أن تكون <strong>مشفّرة</strong> ومخزّنة في موقع جغرافي مختلف
+       (سحابة مشفّرة، قرص خارجي في مكان آمن).</p>
+  </div>
+
+  <h2 class="lesson-title" id="l11-5"><span class="lesson-number">11.5</span> التحديثات والصيانة</h2>
+  <pre><code># سحب التحديثات
+git pull origin main
+
+# تطبيق الميجريشن الجديدة
+python manage.py migrate
+
+# تجميع الملفات الثابتة
+python manage.py collectstatic --noinput
+
+# إعادة تشغيل السيرفر
+./run.sh SKIP_DEPS=1</code></pre>
+
+  <h3>مهام دورية</h3>
+  <ul>
+    <li><strong>أسبوعياً:</strong> نسخ احتياطي + فحص AuditLog عن نشاط مشبوه.</li>
+    <li><strong>شهرياً:</strong> تحديث كلمات مرور الإداريين + مراجعة الصلاحيات.</li>
+    <li><strong>ربع سنوي:</strong> تحديث Django والمكتبات لإصدارات الأمان.</li>
+    <li><strong>سنوياً:</strong> تدقيق أمني خارجي + تحديث سياسة حماية البيانات.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- الوحدة 12 -->
+<!-- ============================================================ -->
+<div class="page" id="m12">
+  <div class="module-number">الوحدة الثانية عشرة</div>
+  <h1 class="module-title"><i class="bi bi-clipboard-data-fill"></i> حالات دراسية وتمارين عملية</h1>
+
+  <div class="module-overview">
+    <h4>نظرة عامة</h4>
+    <p>التطبيق العملي يثبّت المعرفة. هذه الوحدة 5 حالات دراسية كاملة تُحاكي ما ستواجهه في الميدان،
+       مع تمارين تطبيقية واختبار ختامي.</p>
+  </div>
+
+  <h2 class="lesson-title" id="l12-1"><span class="lesson-number">12.1</span> حالة كاملة من الصفر للفئة A</h2>
+  <div class="example">
+    <span class="example-label">سيناريو</span>
+    <p>
+      <strong>أحمد العلي</strong>، 35 سنة، مدرّس فيزياء من ريف دمشق. اعتُقل في 15/3/2018 على
+      حاجز عسكري وهو عائد من العمل. نُقل بين 3 فروع: 215 (4 أشهر) → فلسطين 235 (6 أشهر) →
+      عدرا (سنة كاملة). أُفرج عنه بعفو عام في يونيو 2019.
+    </p>
+  </div>
+  <h3>خطوات التوثيق</h3>
+  <ol>
+    <li>أنشئ ملف <code>HQ-2026-0001</code>، أدخل البيانات الأساسية.</li>
+    <li>سجّل الموافقة المستنيرة (IIIM + ICC + ولاية قضائية).</li>
+    <li>أضف واقعة الاعتقال (15/3/2018) بتفاصيل &gt;150 حرف.</li>
+    <li>أضف 3 فترات احتجاز بترتيب 1، 2، 3 - كل فرع منفصل.</li>
+    <li>لكل فترة: اختر أنماط التعذيب، اكتب وصف تفصيلي &gt;200 حرف.</li>
+    <li>أضف بيانات الإفراج (يونيو 2019، عفو عام).</li>
+    <li>أنشئ مقابلة Interview، علّمها أول + مسجَّلة، ارفع الفيديو.</li>
+    <li>أضف 2 شهود مستقلين مع موافقات موقّعة.</li>
+    <li>ارفع وثيقتين رسميتين (مثلاً ورقة عفو + كرت زيارة عائلة).</li>
+    <li>أضف تقييم طبي من LDHR متوافق مع إسطنبول.</li>
+    <li>أكمل المسح الاجتماعي للأسرة.</li>
+    <li><strong>النتيجة:</strong> الدرجات تصبح 5/5/5 = 5.0 → رفع التصنيف من "مسودة" إلى "فئة A".</li>
+  </ol>
+
+  <h2 class="lesson-title" id="l12-2"><span class="lesson-number">12.2</span> حالة بدون وثائق رسمية</h2>
+  <div class="example">
+    <span class="example-label">سيناريو</span>
+    <p>ناجٍ بلا أي وثيقة رسمية - النظام السوري لم يُسلّمه شيئاً. كيف نوثّقه؟</p>
+  </div>
+  <h3>الاستراتيجية</h3>
+  <ul>
+    <li>الاعتماد على <strong>الشهود المتقاطعون</strong> - 3 شهود مستقلون.</li>
+    <li>وثائق العائلة: كرت زيارة، إيصال حوالة، أوراق محامٍ.</li>
+    <li>التقييم الطبي وفق إسطنبول (الندوب دليل).</li>
+    <li>صور ما قبل الاعتقال للتعريف بالشخصية.</li>
+    <li>منشورات سوشيال ميديا قبل/بعد.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l12-3"><span class="lesson-number">12.3</span> حالة الناجي مع شهود متعددين</h2>
+  <div class="example">
+    <span class="example-label">سيناريو</span>
+    <p>ناجٍ كان في زنزانة معه 50 معتقلاً، خرجوا في مواعيد مختلفة. كيف نختار الشهود؟</p>
+  </div>
+  <h3>المعايير</h3>
+  <ul>
+    <li>ابدأ بشاهدَيْن مستقلَّيْن - <strong>لم يلتقيا</strong> بالناجي بعد الإفراج.</li>
+    <li>ركّز على الشهود الذين رأوا حادثة محددة (وفاة، تعذيب علني، نقل).</li>
+    <li>الشهود الذين يستطيعون وصف الناجي بدقة (الملامح، الصوت، قصة عرفها).</li>
+    <li>الشهود الذين قُدّموا للمحاكم سابقاً.</li>
+    <li>لا تتجاوز 4-5 شهود لتجنّب التكرار.</li>
+  </ul>
+
+  <h2 class="lesson-title" id="l12-4"><span class="lesson-number">12.4</span> الأخطاء الشائعة وكيف تتجنّبها</h2>
+  <table>
+    <thead><tr><th>الخطأ</th><th>العواقب</th><th>الحل</th></tr></thead>
+    <tbody>
+      <tr><td>كتابة "المخابرات" وحدها</td><td>الوثيقة غامضة، تُرفض</td><td>اكتب الاسم الكامل: "المخابرات الجوية - فرع X"</td></tr>
+      <tr><td>الجمع بين شاهد التقى بالناجي</td><td>الشهادة غير مستقلة</td><td>وثّق ذلك واستبعده من العدّ</td></tr>
+      <tr><td>وصف تعذيب &lt;100 حرف</td><td>درجة موثوقية منخفضة</td><td>اطلب من الناجي تفاصيل: ما الذي حدث بالضبط؟</td></tr>
+      <tr><td>عدم إنشاء سجل Interview</td><td>درجتان مفقودتان من الموثوقية</td><td>أنشئ Interview حتى لو كانت المقابلة بسيطة</td></tr>
+      <tr><td>تجاوز الموافقة المستنيرة</td><td>الملف يُرفض كلياً</td><td>أبداً، أبداً تتجاوز هذه الخطوة</td></tr>
+      <tr><td>رفع صور بصيغة HEIC</td><td>قد لا تُعرض في الجهات</td><td>حوّلها لـ JPG قبل الرفع</td></tr>
+      <tr><td>مشاركة معلومات بدون موافقة طبقية</td><td>خرق أخلاقي</td><td>تحقق دائماً من خانات الموافقة لكل جهة</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title" id="l12-5"><span class="lesson-number">12.5</span> الاختبار الختامي</h2>
+  <div class="quiz-section">
+    <h3>📝 50 سؤال شامل</h3>
+    <p>هذه عينة من 10 أسئلة. الاختبار الكامل في قسم الدروس التفاعلية.</p>
+
+    <div class="quiz-question">
+      <p>1. متى يحق لنا الإفصاح عن معلومات الناجي دون موافقته؟</p>
+      <div class="quiz-answer">في 4 حالات: خطر وشيك، أمر قضائي، انسحاب الناجي بنفسه، أمن العاملين.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>2. ما الفرق بين واقعة الاعتقال وفترة الاحتجاز؟</p>
+      <div class="quiz-answer">الواقعة = لحظة الاعتقال (تاريخ، مكان، جهة). الفترة = إقامة في فرع معين قبل الانتقال لآخر.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>3. كم شاهد مستقل تحتاج للحصول على نقطتين تحقق متقاطع؟</p>
+      <div class="quiz-answer">شاهدان مستقلان (مع موافقة موقّعة).</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>4. ما هو الحد الأدنى لطول وصف التعذيب لاكتساب نقطة موثوقية؟</p>
+      <div class="quiz-answer">200 حرف. (وللاعتقال: 150 حرف).</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>5. هل يمكنك إدخال درجات الملف يدوياً؟</p>
+      <div class="quiz-answer">لا، تُحسَب آلياً عبر signals عند كل تعديل في البيانات.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>6. ما هي قاعدة الـIIIM الذهبية بشأن المقابلات؟</p>
+      <div class="quiz-answer">تجنّب إعادة مقابلة الناجين لتفادي إعادة الصدمة. اطلب المقابلات السابقة من المنظمات الأخرى.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>7. ما هي بصمة SHA-256 ولماذا تستخدم؟</p>
+      <div class="quiz-answer">خوارزمية تشفير تنتج بصمة فريدة لكل ملف. أي تعديل يغيّر البصمة. تستخدم لإثبات سلامة الوثيقة.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>8. كيف نخفي هوية الناجي في النظام؟</p>
+      <div class="quiz-answer">عبر خانات في الموافقة: إخفاء الاسم، الصورة، الموقع، تفاصيل العائلة. كل منها منفصل.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>9. هل يمكن حذف ملف ناجٍ نهائياً من النظام؟</p>
+      <div class="quiz-answer">لا - بل يُؤرشَف. الحذف النهائي ممنوع لمتطلبات سلامة الأدلة.</div>
+    </div>
+
+    <div class="quiz-question">
+      <p>10. ما الجهات الأربع التي تُصنّف ضمن "أممية" في النظام؟</p>
+      <div class="quiz-answer">IIIM (الآلية الدولية)، CoI (لجنة التحقيق)، ICC (المحكمة الجنائية)، والمحاكم الدولية المختصة.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- الملاحق -->
+<!-- ============================================================ -->
+<div class="page" id="appendix">
+  <h1 class="module-title"><i class="bi bi-bookmark-fill"></i> الملاحق</h1>
+
+  <h2 class="lesson-title">📖 مسرد المصطلحات</h2>
+  <table>
+    <thead><tr><th>المصطلح</th><th>التعريف</th></tr></thead>
+    <tbody>
+      <tr><td>IIIM</td><td>الآلية الدولية المحايدة المستقلة لسوريا. آلية أممية لجمع وتنظيم الأدلة.</td></tr>
+      <tr><td>ICC</td><td>المحكمة الجنائية الدولية. مقرها لاهاي.</td></tr>
+      <tr><td>CoI</td><td>لجنة التحقيق الدولية المستقلة المعنية بسوريا. تابعة لمجلس حقوق الإنسان.</td></tr>
+      <tr><td>Chain of Custody</td><td>سلسلة الحيازة. سجل كامل لمن لمس الوثيقة منذ مصدرها.</td></tr>
+      <tr><td>SHA-256</td><td>خوارزمية تشفير. تنتج "بصمة" فريدة من 64 حرف لكل ملف.</td></tr>
+      <tr><td>Informed Consent</td><td>الموافقة المستنيرة. موافقة الناجي على المشاركة بعد فهم كامل.</td></tr>
+      <tr><td>Layered Consent</td><td>الموافقة الطبقية. موافقة منفصلة لكل جهة محتملة.</td></tr>
+      <tr><td>Cross-corroboration</td><td>التحقق المتقاطع. تأكيد الرواية عبر شهود ووثائق مستقلة.</td></tr>
+      <tr><td>Re-traumatization</td><td>إعادة الصدمة. تكرار سرد الألم يُعيد إنتاج الصدمة.</td></tr>
+      <tr><td>Universal Jurisdiction</td><td>الولاية القضائية العالمية. محاكمة الجرائم الكبرى أينما حدثت.</td></tr>
+      <tr><td>Istanbul Protocol</td><td>بروتوكول إسطنبول. المعيار الأممي لتوثيق التعذيب.</td></tr>
+      <tr><td>Berkeley Protocol</td><td>بروتوكول بيركلي. معايير التحقيقات الرقمية مفتوحة المصدر.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title">📚 المراجع الرئيسية</h2>
+  <ol>
+    <li>OHCHR. <em>Istanbul Protocol Revised Edition</em>. United Nations, 2022.</li>
+    <li>UC Berkeley HRC. <em>Berkeley Protocol on Digital Open Source Investigations</em>. 2022.</li>
+    <li>IIIM. <em>Methodology Annex A - Documentation Standards</em>. December 2024.</li>
+    <li>Eurojust &amp; ICC. <em>Documenting International Crimes - Civil Society Guide</em>. 2022.</li>
+    <li>UN Minnesota Protocol. <em>On the Investigation of Potentially Unlawful Death</em>. 2017.</li>
+    <li>OHCHR. <em>Manual on Effective Investigation and Documentation</em>. 2019.</li>
+    <li>SJAC. <em>دليل التوثيق للمنظمات السورية</em>. 2023.</li>
+  </ol>
+
+  <h2 class="lesson-title">🔗 جهات الاتصال</h2>
+  <table>
+    <thead><tr><th>الجهة</th><th>البريد</th><th>الموقع</th></tr></thead>
+    <tbody>
+      <tr><td>IIIM</td><td>iiim-info-providers@un.org</td><td>iiim.un.org</td></tr>
+      <tr><td>CoI Syria</td><td>coi-syria@un.org</td><td>ohchr.org/coi-syria</td></tr>
+      <tr><td>ICC OTP</td><td>OTP.InformationDesk@icc-cpi.int</td><td>icc-cpi.int</td></tr>
+      <tr><td>SNHR</td><td>info@snhr.org</td><td>snhr.org</td></tr>
+      <tr><td>SJAC</td><td>info@syriaaccountability.org</td><td>syriaaccountability.org</td></tr>
+    </tbody>
+  </table>
+
+  <h2 class="lesson-title">⌨️ اختصارات مفاتيح النظام</h2>
+  <table>
+    <thead><tr><th>الإجراء</th><th>الاختصار</th></tr></thead>
+    <tbody>
+      <tr><td>طباعة الصفحة الحالية</td><td><code>Ctrl + P</code></td></tr>
+      <tr><td>البحث في الصفحة</td><td><code>Ctrl + F</code></td></tr>
+      <tr><td>تكبير/تصغير</td><td><code>Ctrl + +/-</code></td></tr>
+      <tr><td>العودة للداشبورد</td><td><code>Alt + H</code> (في القائمة)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- شهادة الإتمام -->
+<!-- ============================================================ -->
+<div class="page" id="certificate">
+  <div class="certificate">
+    <img src="{% static 'img/logo.jpg' %}" alt="حقّنا" style="height:100px;">
+    <div class="ribbon">🏆 شهادة إتمام دورة تدريبية</div>
+    <h1>شهادة جاهزية موثّق ميداني</h1>
+    <p style="font-size: 1.1rem;">تشهد <strong>جمعية حقّنا (HAQQUNA)</strong> أن المتطوّع</p>
+    <div class="recipient">_______________________________</div>
+    <p style="font-size: 1.1rem;">
+      قد أتمّ بنجاح <strong>الدورة التدريبية الشاملة</strong> لنظام توثيق ملفات الناجين،
+      المكوّنة من <strong>12 وحدة</strong> و <strong>60 درساً</strong>،
+      ويتقن المعايير الدولية الأربعة (إسطنبول، بيركلي، IIIM، Eurojust/ICC)،
+      وهو مؤهَّل للعمل الميداني في التوثيق ضمن فريق الجمعية.
+    </p>
+    <div style="display:flex; justify-content: space-around; margin-top: 50px;">
+      <div>
+        <div style="border-bottom: 1px solid #333; padding: 10px 50px;"></div>
+        <small>المدرّب المسؤول</small>
+      </div>
+      <div>
+        <div style="border-bottom: 1px solid #333; padding: 10px 50px;"></div>
+        <small>المدير التنفيذي</small>
+      </div>
+    </div>
+    <p style="margin-top: 30px; font-size: 0.9rem; color: #666;">
+      التاريخ: ____________ &middot; رقم الشهادة: HQ-CERT-____
+    </p>
+  </div>
+</div>
+
+<script>
+// التنقل السريع
+const pageList = document.querySelectorAll('.page');
+const dropdown = document.getElementById('quickJump');
+pageList.forEach(p => {
+  const title = p.querySelector('.module-title, h1, h2')?.textContent || p.id;
+  const opt = document.createElement('option');
+  opt.value = '#' + p.id;
+  opt.textContent = title.trim().slice(0, 60);
+  dropdown.appendChild(opt);
+});
+
+function jumpTo(hash) {
+  if (!hash) return;
+  document.querySelector(hash)?.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+// وضع العرض / وضع الكتاب
+function toggleMode() {
+  document.body.classList.toggle('slides-mode');
+  const btn = document.getElementById('modeBtn');
+  if (document.body.classList.contains('slides-mode')) {
+    btn.textContent = '📖 وضع الكتاب';
+    pageList[0].classList.add('active');
+  } else {
+    btn.textContent = '🖼️ وضع العرض';
+    pageList.forEach(p => p.classList.remove('active'));
+  }
+}
+
+// مؤشر التقدّم في القراءة
+window.addEventListener('scroll', () => {
+  const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+  const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+  const scrolled = (winScroll / height) * 100;
+  document.getElementById('progressBar').style.width = scrolled + '%';
+});
+
+// التنقل بين الصفحات في وضع العرض
+document.addEventListener('keydown', (e) => {
+  if (!document.body.classList.contains('slides-mode')) return;
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  const idx = Array.from(pageList).indexOf(active);
+  if (e.key === 'ArrowLeft' && idx > 0) {
+    active.classList.remove('active');
+    pageList[idx - 1].classList.add('active');
+    pageList[idx - 1].scrollIntoView();
+  } else if (e.key === 'ArrowRight' && idx < pageList.length - 1) {
+    active.classList.remove('active');
+    pageList[idx + 1].classList.add('active');
+    pageList[idx + 1].scrollIntoView();
+  }
+});
+</script>
+
+</body>
+</html>

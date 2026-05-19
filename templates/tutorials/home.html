@@ -12,10 +12,37 @@
   </p>
 </div>
 
+<!-- بطاقة الدورة الشاملة -->
+<div class="card mb-4 border-haqquna" style="background:linear-gradient(135deg, #1c6b85, #4fbfd6); color:white;">
+  <div class="card-body">
+    <div class="row align-items-center">
+      <div class="col-md-9">
+        <h3 class="mb-2"><i class="bi bi-book-half"></i> الدورة التدريبية الشاملة</h3>
+        <p class="mb-2" style="opacity:0.95;">
+          دليل احترافي متكامل في <strong>12 وحدة</strong> و <strong>60 درساً</strong> -
+          من الصفر إلى موثّق ميداني محترف. يشمل المعايير الدولية الأربعة كاملةً،
+          حالات دراسية، واختبارات. قابل للطباعة كدليل احترافي.
+        </p>
+        <div>
+          <span class="badge bg-light text-dark me-1">⏱️ ~15 ساعة</span>
+          <span class="badge bg-light text-dark me-1">🎓 شهادة جاهزية</span>
+          <span class="badge bg-light text-dark me-1">📖 قابل للطباعة</span>
+          <span class="badge bg-light text-dark">🖼️ وضع عرض تفاعلي</span>
+        </div>
+      </div>
+      <div class="col-md-3 text-center">
+        <a href="{% url 'tutorials:full_course' %}" class="btn btn-light btn-lg">
+          <i class="bi bi-arrow-left-circle"></i> ابدأ الدورة
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card mb-4">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <h5 class="mb-0 text-haqquna"><i class="bi bi-trophy"></i> تقدّمك العام</h5>
+      <h5 class="mb-0 text-haqquna"><i class="bi bi-trophy"></i> تقدّمك العام في الدروس التفاعلية</h5>
       <span><strong>{{ completed }}</strong> / {{ total }} درس مكتمل ({{ percent }}%)</span>
     </div>
     <div class="progress" style="height: 14px;">
