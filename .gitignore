@@ -19,7 +19,11 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+db.training.sqlite3
+db.training.sqlite3-journal
+db.sqlite3.old.*
 media/
+media_training/
 staticfiles/
 .env
 

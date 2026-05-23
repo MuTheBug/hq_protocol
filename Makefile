@@ -1,4 +1,4 @@
-.PHONY: help install migrate seed admin run dev test clean reset backup restore export-excel
+.PHONY: help install migrate seed admin run dev test clean reset backup restore export-excel train train-reset train-seed
 
 PYTHON := python3
 PORT ?= 8000
@@ -7,15 +7,32 @@ HOST ?= 0.0.0.0
 help:
 	@echo "جمعية حقّنا - HAQQUNA - أوامر التشغيل"
 	@echo ""
-	@echo "  make run         - تشغيل سريع (تثبيت + ترحيل + بذر + سيرفر)"
+	@echo "=== الإنتاج (التوثيق الفعلي - المنفذ 8000) ==="
+	@echo "  make run         - تشغيل النظام الفعلي"
+	@echo "  make backup      - نسخة احتياطية JSON"
+	@echo ""
+	@echo "=== التدريب (المتطوّعون - المنفذ 8001) ==="
+	@echo "  make train       - تشغيل بيئة التدريب المنفصلة"
+	@echo "  make train-reset - مسح بيانات التدريب وإعادة البدء"
+	@echo "  make train-seed  - بذر بيانات تجريبية للمتدرّبين"
+	@echo ""
+	@echo "=== أوامر تقنية ==="
 	@echo "  make install     - تثبيت الحزم فقط"
 	@echo "  make migrate     - ترحيل قاعدة البيانات فقط"
 	@echo "  make seed        - بذر مراكز الاحتجاز وأنماط التعذيب"
 	@echo "  make admin       - إنشاء/إعادة ضبط حساب admin"
 	@echo "  make dev         - تشغيل سيرفر التطوير فقط"
-	@echo "  make backup      - نسخة احتياطية JSON للقاعدة"
-	@echo "  make reset       - حذف القاعدة وإعادة البناء (DESTRUCTIVE!)"
+	@echo "  make reset       - حذف القاعدة الفعلية وإعادة البناء (DESTRUCTIVE!)"
 	@echo "  make clean       - تنظيف __pycache__ والملفات المؤقتة"
+
+train:
+	@bash run_training.sh
+
+train-reset:
+	DJANGO_MODE=training $(PYTHON) manage.py reset_training_db --yes-i-am-sure
+
+train-seed:
+	DJANGO_MODE=training $(PYTHON) manage.py seed_training_data
 
 run:
 	@bash run.sh

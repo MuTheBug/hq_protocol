@@ -13,9 +13,18 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ============================================================
+# وضع التشغيل (إنتاج / تدريب) - يفصل قاعدة بيانات التوثيق الفعلي
+# عن قاعدة بيانات تدريب المتطوّعين فصلاً تاماً.
+# ============================================================
+DJANGO_MODE = os.environ.get("DJANGO_MODE", "production").lower()
+IS_TRAINING_MODE = DJANGO_MODE == "training"
+
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
-    "django-insecure-^=tqear9g51z^vad2e4lu@79(1rz0%d5l*e!r)y2!akd!s42*_",
+    "django-insecure-training-environment-only-do-not-use-in-production"
+    if IS_TRAINING_MODE
+    else "django-insecure-^=tqear9g51z^vad2e4lu@79(1rz0%d5l*e!r)y2!akd!s42*_",
 )
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
@@ -75,12 +84,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "hq_protocol.wsgi.application"
 
+# قاعدة بيانات منفصلة لوضع التدريب
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": BASE_DIR / ("db.training.sqlite3" if IS_TRAINING_MODE else "db.sqlite3"),
     }
 }
+
+# جلسات مختلفة كي لا تتداخل المصادقة بين البيئتين
+SESSION_COOKIE_NAME = "hq_session_training" if IS_TRAINING_MODE else "hq_session"
+CSRF_COOKIE_NAME = "hq_csrf_training" if IS_TRAINING_MODE else "hq_csrf"
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -109,7 +123,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = BASE_DIR / ("media_training" if IS_TRAINING_MODE else "media")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -148,7 +162,7 @@ LOGGING = {
         "audit_file": {
             "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": BASE_DIR / "audit.log",
+            "filename": BASE_DIR / ("audit.training.log" if IS_TRAINING_MODE else "audit.log"),
             "formatter": "verbose",
         },
         "console": {
