@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}إعداد تطبيق الجوال{% endblock %}
+
+{% block content %}
+<h2 class="text-haqquna mb-3">
+  <i class="bi bi-phone"></i> إعداد التطبيق على هواتف المتطوّعين
+</h2>
+
+<div class="alert alert-info">
+  <strong>كيف يعمل النظام:</strong>
+  هذا النظام يعمل كـ <strong>تطبيق ويب تقدّمي (PWA)</strong> - يُثبَّت على هاتف المتطوّع
+  مثل التطبيق العادي، يعمل بدون إنترنت، ويتزامن مع اللابتوب عبر الواي فاي الخاص.
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-haqquna text-white">
+        <i class="bi bi-1-circle-fill"></i> الإعداد على اللابتوب
+      </div>
+      <div class="card-body">
+        <ol>
+          <li>تأكّد أن اللابتوب على نفس شبكة الواي فاي مع الهواتف.</li>
+          <li>شغّل النظام مع السماح بالاتصالات الخارجية:
+            <pre><code>HOST=0.0.0.0 ./run.sh</code></pre>
+            (الافتراضي بالفعل يستمع على 0.0.0.0)
+          </li>
+          <li>عنوان اللابتوب على الشبكة:
+            <div class="alert alert-success mt-2 mb-0">
+              <strong>http://{{ lan_ip }}:{{ port }}/</strong>
+            </div>
+          </li>
+          <li>افتح جدار الحماية (Firewall) للمنفذ {{ port }} إن لزم.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-haqquna text-white">
+        <i class="bi bi-2-circle-fill"></i> التثبيت على الأندرويد
+      </div>
+      <div class="card-body">
+        <ol>
+          <li>افتح المتصفح (Chrome مُفضّل) على هاتف المتطوّع.</li>
+          <li>اكتب العنوان:
+            <div class="alert alert-info mt-2 mb-2 small">
+              <code>http://{{ lan_ip }}:{{ port }}/</code>
+            </div>
+          </li>
+          <li>سجّل دخول المتطوّع.</li>
+          <li>اضغط القائمة (⋮) → <strong>«إضافة إلى الشاشة الرئيسية»</strong>
+            أو <strong>«تثبيت التطبيق»</strong>.</li>
+          <li>الأيقونة الجديدة على شاشة الهاتف = التطبيق.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header bg-warning">
+    <i class="bi bi-wifi-off"></i> العمل بدون إنترنت
+  </div>
+  <div class="card-body">
+    <ol>
+      <li>المتطوّع يفتح التطبيق على هاتفه أثناء وجوده مع اللابتوب أول مرة (لتنزيل الواجهات).</li>
+      <li>يخرج للميدان مع هاتفه - <strong>دون إنترنت ودون قرب من اللابتوب</strong>.</li>
+      <li>يفتح التطبيق - يظهر شريط أحمر «غير متصل» في الأسفل.</li>
+      <li>يدخل بيانات الناجي، يحفظ - <strong>تُحفظ محلياً في الهاتف</strong>.</li>
+      <li>عداد المسوّدات في الأعلى يزداد <span class="badge bg-warning text-dark">3</span></li>
+      <li>عندما يعود لشبكة اللابتوب، يفتح التطبيق:
+        <ul>
+          <li>الشريط الأحمر يختفي.</li>
+          <li>التطبيق يرفع المسوّدات تلقائياً.</li>
+          <li>يمكن الضغط على <i class="bi bi-arrow-repeat"></i> للمزامنة الفورية.</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header bg-haqquna text-white">
+    <i class="bi bi-shield-lock"></i> الأمان على الشبكة المحلية
+  </div>
+  <div class="card-body">
+    <ul>
+      <li><strong>الشبكة الخاصة:</strong> النظام يعمل على شبكة محلية بدون إنترنت، البيانات لا تخرج من الشبكة.</li>
+      <li><strong>كلمات المرور:</strong> كل متطوّع له حساب منفصل.</li>
+      <li><strong>سجل التدقيق:</strong> كل عملية تُسجَّل (مَن، متى، من أي جهاز).</li>
+      <li><strong>تخزين محلي مشفّر:</strong> المسوّدات في IndexedDB المتصفح، تُحذَف بعد الرفع.</li>
+      <li>للحماية الإضافية، يُنصح بـ HTTPS داخل الشبكة (شهادة self-signed).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header bg-light">
+    <i class="bi bi-question-circle"></i> أسئلة شائعة
+  </div>
+  <div class="card-body">
+    <div class="mb-2">
+      <strong>س: هل يحتاج المتطوّع لإنترنت دائماً؟</strong><br>
+      ج: لا. بعد التثبيت الأول، يعمل التطبيق كلياً بدون إنترنت.
+    </div>
+    <div class="mb-2">
+      <strong>س: ماذا لو فقد الهاتف أو تعطّل قبل المزامنة؟</strong><br>
+      ج: المسوّدات تُفقَد. لذلك ننصح بالعودة للشبكة كل يوم للمزامنة. لاحقاً يمكن إضافة نسخ احتياطي سحابي.
+    </div>
+    <div class="mb-2">
+      <strong>س: هل يمكن رفع صور وفيديوهات offline؟</strong><br>
+      ج: حالياً النظام يخزّن البيانات النصّية offline. الصور والفيديوهات تحتاج اتصالاً للرفع.
+    </div>
+    <div class="mb-2">
+      <strong>س: متطوّع آخر يدخل نفس الناجي - هل يتعارض؟</strong><br>
+      ج: النظام يفحص الرقم الوطني ويمنع التكرار عند المزامنة. إن دخل اثنان نفس الشخص، الأول يفوز والثاني يُتخطّى.
+    </div>
+  </div>
+</div>
+{% endblock %}

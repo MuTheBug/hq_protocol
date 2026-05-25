@@ -317,7 +317,7 @@ def detention_period_add(request, pk):
         return HttpResponseForbidden()
     survivor = get_object_or_404(SurvivorProfile, pk=pk)
     if request.method == "POST":
-        form = DetentionPeriodForm(request.POST)
+        form = DetentionPeriodForm(request.POST, survivor=survivor)
         if form.is_valid():
             period = form.save(commit=False)
             period.survivor = survivor
@@ -327,11 +327,52 @@ def detention_period_add(request, pk):
             messages.success(request, _("تم إضافة فترة الاحتجاز."))
             return redirect("survivors:detail", pk=survivor.pk)
     else:
-        form = DetentionPeriodForm()
+        form = DetentionPeriodForm(survivor=survivor)
     return render(request, "survivors/sub_form.html", {
         "form": form, "survivor": survivor,
         "title": _("إضافة فترة احتجاز في فرع"),
         "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def detention_event_edit(request, pk):
+    """تعديل واقعة اعتقال موجودة."""
+    from .models import DetentionEvent
+    if not _check_can_document(request.user):
+        return HttpResponseForbidden()
+    event = get_object_or_404(DetentionEvent, pk=pk)
+    survivor = event.survivor
+    if request.method == "POST":
+        form = DetentionEventForm(request.POST, instance=event)
+        if form.is_valid():
+            form.save()
+            _log_action(request, AuditLog.Action.UPDATE, event)
+            messages.success(request, _("تم حفظ تعديلات واقعة الاعتقال."))
+            return redirect("survivors:detail", pk=survivor.pk)
+    else:
+        form = DetentionEventForm(instance=event)
+    return render(request, "survivors/sub_form.html", {
+        "form": form, "survivor": survivor,
+        "title": _("تعديل واقعة اعتقال"), "submit_label": _("حفظ"),
+    })
+
+
+@login_required
+def detention_event_delete(request, pk):
+    """حذف واقعة اعتقال - فقط للمشرفين والمدير."""
+    from .models import DetentionEvent
+    if not (request.user.is_superuser or request.user.role in {"admin", "supervisor"}):
+        return HttpResponseForbidden(_("الحذف يتطلب صلاحية مشرف."))
+    event = get_object_or_404(DetentionEvent, pk=pk)
+    survivor_pk = event.survivor.pk
+    if request.method == "POST":
+        _log_action(request, AuditLog.Action.DELETE, event)
+        event.delete()
+        messages.success(request, _("تم حذف واقعة الاعتقال."))
+        return redirect("survivors:detail", pk=survivor_pk)
+    return render(request, "survivors/detention_event_delete_confirm.html", {
+        "event": event, "survivor": event.survivor,
     })
 
 

@@ -558,3 +558,63 @@ def api_neighborhoods(request):
     gov = request.GET.get("gov", "")
     city = request.GET.get("city", "")
     return JsonResponse({"neighborhoods": neighborhoods_for(gov, city)})
+
+
+# ============================================================
+# تصدير/استيراد ملف ناجٍ مفرد (يشمل كل البيانات المرتبطة)
+# ============================================================
+
+@login_required
+def export_single_survivor_json(request, pk):
+    """تصدير ملف ناجٍ واحد بكل بياناته المرتبطة لملف JSON قابل للاستيراد."""
+    from social_survey.models import (
+        Child, EducationStatus, EmploymentInfo, HealthAccess,
+        HousingInfo, HouseholdSurvey, NeedsAssessment,
+    )
+    survivor = get_object_or_404(SurvivorProfile.all_objects, pk=pk)
+
+    # نجمع كل السجلات المرتبطة
+    objects = [survivor]
+    for related_attr in [
+        "consent", "release_event", "long_term_impact",
+    ]:
+        obj = getattr(survivor, related_attr, None)
+        if obj:
+            objects.append(obj)
+    for queryset_attr in [
+        "detention_events", "detention_periods", "witnesses",
+        "documents", "medical_assessments", "notes", "interviews",
+    ]:
+        objects.extend(list(getattr(survivor, queryset_attr).all()))
+    # وسائط المقابلات + سلسلة الحيازة (متعدّية)
+    for interview in survivor.interviews.all():
+        objects.extend(list(interview.media.all()))
+    for document in survivor.documents.all():
+        objects.extend(list(document.custody_log.all()))
+    # المسح الاجتماعي
+    household = getattr(survivor, "household_survey", None)
+    if household:
+        objects.append(household)
+        for related_attr in ["housing", "health_access", "needs"]:
+            obj = getattr(household, related_attr, None)
+            if obj:
+                objects.append(obj)
+        objects.extend(list(household.children.all()))
+    education = getattr(survivor, "education", None)
+    if education:
+        objects.append(education)
+    employment = getattr(survivor, "employment", None)
+    if employment:
+        objects.append(employment)
+
+    data = serialize("json", objects, indent=2, ensure_ascii=False)
+    AuditLog.objects.create(
+        user=request.user, action=AuditLog.Action.EXPORT,
+        target_model="SurvivorProfile", target_id=str(survivor.pk),
+        target_repr=f"تصدير ملف مفرد {survivor.case_reference} ({len(objects)} سجل)",
+        path=request.path, ip_address=request.META.get("REMOTE_ADDR"),
+    )
+    filename = f"survivor_{survivor.case_reference}_{datetime.now():%Y%m%d_%H%M%S}.json"
+    response = HttpResponse(data, content_type="application/json; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

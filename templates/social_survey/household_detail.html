@@ -193,7 +193,7 @@
           <dt class="col-6">وضع العمل</dt>
           <dd class="col-6">{{ employment.get_status_display }}</dd>
           <dt class="col-6">المهنة قبل الاعتقال</dt>
-          <dd class="col-6">{{ employment.occupation_before_detention|default:"—" }}</dd>
+          <dd class="col-6">{{ household.survivor.get_occupation_category_display|default:"—" }}{% if household.survivor.occupation_detail %} ({{ household.survivor.occupation_detail }}){% endif %}</dd>
           <dt class="col-6">المهنة الحالية</dt>
           <dd class="col-6">{{ employment.current_occupation|default:"—" }}</dd>
           {% if employment.monthly_income %}

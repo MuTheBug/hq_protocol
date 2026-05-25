@@ -47,7 +47,10 @@ class DetentionFacility(models.Model):
     parent_entity = models.CharField(
         _("الجهة الأم"), max_length=30, choices=Entity.choices,
     )
-    governorate = models.CharField(_("المحافظة"), max_length=100, blank=True)
+    governorate = models.CharField(
+        _("المحافظة"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
+    )
     address = models.CharField(_("الموقع/العنوان"), max_length=300, blank=True)
     latitude = models.DecimalField(
         _("خط العرض"), max_digits=9, decimal_places=6, null=True, blank=True,
@@ -609,7 +612,10 @@ class DetentionEvent(models.Model):
     detention_location = models.CharField(
         _("مكان الاعتقال (شارع، نقطة تفتيش، البيت...)"), max_length=300,
     )
-    governorate = models.CharField(_("المحافظة"), max_length=100, blank=True)
+    governorate = models.CharField(
+        _("المحافظة"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
+    )
     arresting_entity = models.CharField(
         _("الجهة المعتقِلة (الاسم الكامل)"), max_length=300,
         help_text=_("مثال: المخابرات الجوية - فرع التحقيق - المطار"),

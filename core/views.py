@@ -79,3 +79,22 @@ def home(request):
         return dashboard(request)
     from django.shortcuts import redirect
     return redirect("accounts:login")
+
+
+@login_required
+def mobile_setup(request):
+    """صفحة إرشادات تثبيت التطبيق على الأندرويد + معلومات اللابتوب."""
+    import socket
+    # محاولة الحصول على IP اللابتوب على الـLAN
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(("8.8.8.8", 80))
+        lan_ip = sock.getsockname()[0]
+        sock.close()
+    except Exception:
+        lan_ip = "127.0.0.1"
+
+    return render(request, "core/mobile_setup.html", {
+        "lan_ip": lan_ip,
+        "port": request.get_port(),
+    })

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from survivors.choices import SyrianGovernorate
 from survivors.models import SurvivorProfile
 
 
@@ -70,10 +71,12 @@ class HouseholdSurvey(models.Model):
         _("كم مرة تم التهجير؟"), default=0,
     )
     original_governorate = models.CharField(
-        _("المحافظة الأصلية"), max_length=100, blank=True,
+        _("المحافظة الأصلية"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
     )
     current_governorate = models.CharField(
-        _("المحافظة/البلد الحالي"), max_length=100, blank=True,
+        _("المحافظة الحالية (داخل سوريا)"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
     )
 
     # ---- معلومات المسح ----
@@ -278,7 +281,10 @@ class HousingInfo(models.Model):
 
     # الموقع
     address = models.TextField(_("العنوان"), blank=True)
-    governorate = models.CharField(_("المحافظة"), max_length=100, blank=True)
+    governorate = models.CharField(
+        _("المحافظة"), max_length=30,
+        choices=SyrianGovernorate.CHOICES, blank=True, db_index=True,
+    )
     city = models.CharField(_("المدينة/البلدة"), max_length=100, blank=True)
     neighborhood = models.CharField(_("الحي"), max_length=100, blank=True)
 
@@ -393,9 +399,8 @@ class EmploymentInfo(models.Model):
     status = models.CharField(
         _("وضع العمل الحالي"), max_length=30, choices=EmploymentStatus.choices,
     )
-    occupation_before_detention = models.CharField(
-        _("المهنة قبل الاعتقال"), max_length=200, blank=True,
-    )
+    # ملاحظة: المهنة وقت الاعتقال موجودة في SurvivorProfile.occupation_category
+    # هنا نوثّق فقط المهنة الحالية وفرق الوضع
     current_occupation = models.CharField(
         _("المهنة الحالية"), max_length=200, blank=True,
     )

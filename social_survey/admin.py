@@ -178,7 +178,6 @@ class EmploymentInfoAdmin(admin.ModelAdmin):
     )
     search_fields = (
         "survivor__case_reference", "current_occupation",
-        "occupation_before_detention",
     )
     autocomplete_fields = ["survivor"]
 

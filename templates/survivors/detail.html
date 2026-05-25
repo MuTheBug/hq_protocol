@@ -40,6 +40,9 @@
         <a href="{% url 'survivors:transmit_chooser' survivor.pk %}" class="btn btn-sm btn-success mt-1">
           <i class="bi bi-send"></i> إحالة لجهة خارجية
         </a>
+        <a href="{% url 'survivors:export_single' survivor.pk %}" class="btn btn-sm btn-outline-info mt-1">
+          <i class="bi bi-file-earmark-code"></i> تصدير JSON
+        </a>
         {% if user.is_superuser or user.role == 'admin' or user.role == 'supervisor' %}
         <a href="{% url 'survivors:archive' survivor.pk %}" class="btn btn-sm btn-outline-warning mt-1">
           <i class="bi bi-archive"></i> أرشفة
@@ -321,10 +324,24 @@
     <div class="card-body">
       {% for event in detention_events %}
       <div class="timeline-item">
-        <strong>{{ event.detention_date|date:"Y-m-d" }}</strong> - {{ event.detention_location }}
-        <div><small>الجهة المعتقِلة: {{ event.arresting_entity }}</small></div>
-        {% if event.reason_stated %}<div><small>السبب: {{ event.reason_stated }}</small></div>{% endif %}
-        {% if event.circumstances %}<div class="mt-1"><small class="text-muted">{{ event.circumstances|truncatechars:300 }}</small></div>{% endif %}
+        <div class="d-flex justify-content-between">
+          <div>
+            <strong>{{ event.detention_date|date:"Y-m-d" }}</strong> - {{ event.detention_location }}
+            <div><small>الجهة المعتقِلة: {{ event.arresting_entity }}</small></div>
+            {% if event.reason_stated %}<div><small>السبب: {{ event.reason_stated }}</small></div>{% endif %}
+            {% if event.circumstances %}<div class="mt-1"><small class="text-muted">{{ event.circumstances|truncatechars:300 }}</small></div>{% endif %}
+          </div>
+          <div class="text-nowrap">
+            <a href="{% url 'survivors:detention_event_edit' event.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil"></i>
+            </a>
+            {% if user.is_superuser or user.role == 'admin' or user.role == 'supervisor' %}
+            <a href="{% url 'survivors:detention_event_delete' event.pk %}" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-trash"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
       </div>
       {% empty %}
       <p class="text-muted text-center">لم تُسجَّل واقعة اعتقال بعد</p>

@@ -242,7 +242,14 @@ class DetentionPeriodForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        # نستقبل الناجي لفلترة قائمة وقائع الاعتقال على ملفه فقط
+        survivor = kwargs.pop("survivor", None)
         super().__init__(*args, **kwargs)
+        if survivor and "detention_event" in self.fields:
+            self.fields["detention_event"].queryset = DetentionEvent.objects.filter(
+                survivor=survivor,
+            )
+            self.fields["detention_event"].empty_label = "— اختر واقعة اعتقال —"
         for name, field in self.fields.items():
             widget = field.widget
             css = widget.attrs.get("class", "")
