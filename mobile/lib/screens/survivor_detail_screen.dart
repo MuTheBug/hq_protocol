@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 
 import '../models/choices.dart';
+import '../models/more_models.dart';
 import '../models/related.dart';
 import '../models/survivor.dart';
 import '../services/database_service.dart';
@@ -9,10 +9,13 @@ import '../services/sync_service.dart';
 import '../theme.dart';
 import 'forms/consent_form_screen.dart';
 import 'forms/event_form_screen.dart';
+import 'forms/evidence_forms.dart';
 import 'forms/note_form_screen.dart';
 import 'forms/period_form_screen.dart';
 import 'forms/release_form_screen.dart';
+import 'forms/social_forms.dart';
 import 'forms/witness_form_screen.dart';
+import 'social_subscreen.dart';
 import 'survivor_form_screen.dart';
 
 /// شاشة تفاصيل الناجي بـ7 تبويبات: نظرة عامة، موافقة، احتجاز، شهود،
@@ -34,13 +37,18 @@ class _SurvivorDetailScreenState extends State<SurvivorDetailScreen>
   List<DetentionPeriod> _periods = [];
   List<Witness> _witnesses = [];
   List<SurvivorNote> _notes = [];
+  List<SupportingDocument> _documents = [];
+  List<MedicalAssessment> _medical = [];
+  LongTermImpact? _impact;
+  List<Interview> _interviews = [];
+  HouseholdSurvey? _household;
   ReferenceData? _ref;
   late TabController _tabs;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 7, vsync: this);
+    _tabs = TabController(length: 11, vsync: this);
     _load();
   }
 
@@ -53,6 +61,11 @@ class _SurvivorDetailScreenState extends State<SurvivorDetailScreen>
     final periods = await DatabaseService.instance.getPeriodsFor(s.localId!);
     final witnesses = await DatabaseService.instance.getWitnessesFor(s.localId!);
     final notes = await DatabaseService.instance.getNotesFor(s.localId!);
+    final documents = await DatabaseService.instance.getDocumentsFor(s.localId!);
+    final medical = await DatabaseService.instance.getMedicalFor(s.localId!);
+    final impact = await DatabaseService.instance.getImpactFor(s.localId!);
+    final interviews = await DatabaseService.instance.getInterviewsFor(s.localId!);
+    final household = await DatabaseService.instance.getHouseholdFor(s.localId!);
     final ref = await SyncService.instance.loadReferenceData();
     if (!mounted) return;
     setState(() {
@@ -63,6 +76,11 @@ class _SurvivorDetailScreenState extends State<SurvivorDetailScreen>
       _periods = periods;
       _witnesses = witnesses;
       _notes = notes;
+      _documents = documents;
+      _medical = medical;
+      _impact = impact;
+      _interviews = interviews;
+      _household = household;
       _ref = ref;
     });
   }
@@ -101,31 +119,268 @@ class _SurvivorDetailScreenState extends State<SurvivorDetailScreen>
             const Tab(icon: Icon(Icons.dashboard), text: 'نظرة عامة'),
             Tab(icon: const Icon(Icons.shield_outlined),
                 text: 'موافقة${_consent?.isFullyCompliant == true ? " ✓" : ""}'),
-            Tab(icon: const Icon(Icons.event), text: 'اعتقالات (${_events.length})'),
-            Tab(icon: const Icon(Icons.timelapse), text: 'فترات (${_periods.length})'),
-            Tab(icon: const Icon(Icons.people), text: 'شهود (${_witnesses.length})'),
-            Tab(icon: const Icon(Icons.sticky_note_2), text: 'ملاحظات (${_notes.length})'),
+            Tab(icon: const Icon(Icons.event),
+                text: 'اعتقالات (${_events.length})'),
+            Tab(icon: const Icon(Icons.timelapse),
+                text: 'فترات (${_periods.length})'),
             const Tab(icon: Icon(Icons.exit_to_app), text: 'إفراج'),
+            Tab(icon: const Icon(Icons.people),
+                text: 'شهود (${_witnesses.length})'),
+            Tab(icon: const Icon(Icons.description),
+                text: 'وثائق (${_documents.length})'),
+            Tab(icon: const Icon(Icons.local_hospital),
+                text: 'طبي (${_medical.length})'),
+            Tab(icon: const Icon(Icons.videocam),
+                text: 'مقابلات (${_interviews.length})'),
+            Tab(icon: Icon(_household != null
+                ? Icons.home : Icons.home_outlined),
+                text: 'اجتماعي'),
+            Tab(icon: const Icon(Icons.sticky_note_2),
+                text: 'ملاحظات (${_notes.length})'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabs,
         children: [
-          _OverviewTab(s: s, periods: _periods, events: _events, witnesses: _witnesses),
+          _OverviewTab(s: s, periods: _periods, events: _events,
+              witnesses: _witnesses),
           _ConsentTab(survivor: s, consent: _consent, onReload: _load),
           _EventsTab(survivor: s, events: _events, onReload: _load),
-          _PeriodsTab(
-              survivor: s, periods: _periods, events: _events,
+          _PeriodsTab(survivor: s, periods: _periods, events: _events,
               facilities: _ref?.facilities ?? [], onReload: _load),
-          _WitnessesTab(
-              survivor: s, witnesses: _witnesses,
-              facilities: _ref?.facilities ?? [], onReload: _load),
-          _NotesTab(survivor: s, notes: _notes, onReload: _load),
           _ReleaseTab(survivor: s, release: _release, onReload: _load),
+          _WitnessesTab(survivor: s, witnesses: _witnesses,
+              facilities: _ref?.facilities ?? [], onReload: _load),
+          _DocumentsTab(survivor: s, documents: _documents, onReload: _load),
+          _MedicalTab(survivor: s, medical: _medical, impact: _impact,
+              onReload: _load),
+          _InterviewsTab(survivor: s, interviews: _interviews, onReload: _load),
+          _SocialTab(survivor: s, household: _household, onReload: _load),
+          _NotesTab(survivor: s, notes: _notes, onReload: _load),
         ],
       ),
     );
+  }
+}
+
+// ============================================================
+// تبويب: الوثائق الداعمة
+// ============================================================
+class _DocumentsTab extends StatelessWidget {
+  final Survivor survivor;
+  final List<SupportingDocument> documents;
+  final VoidCallback onReload;
+  const _DocumentsTab({required this.survivor,
+      required this.documents, required this.onReload});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: documents.isEmpty
+          ? const Center(child: Text('لا توجد وثائق'))
+          : ListView.builder(itemCount: documents.length,
+              itemBuilder: (_, i) {
+                final d = documents[i];
+                return Card(margin: const EdgeInsets.all(8), child: ListTile(
+                  leading: const Icon(Icons.description,
+                      color: HaqqunaColors.primary),
+                  title: Text(d.title),
+                  subtitle: Text('${d.documentType} · ${d.dateObtained ?? "—"}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      await DatabaseService.instance.deleteDocument(d.localId!);
+                      onReload();
+                    },
+                  ),
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => DocumentFormScreen(
+                            survivor: survivor, document: d)));
+                    onReload();
+                  },
+                ));
+              }),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(
+              builder: (_) => DocumentFormScreen(survivor: survivor)));
+          onReload();
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// تبويب: التقييم الطبي + الأثر طويل الأمد
+// ============================================================
+class _MedicalTab extends StatelessWidget {
+  final Survivor survivor;
+  final List<MedicalAssessment> medical;
+  final LongTermImpact? impact;
+  final VoidCallback onReload;
+  const _MedicalTab({required this.survivor, required this.medical,
+      required this.impact, required this.onReload});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView(padding: const EdgeInsets.all(8), children: [
+        Card(child: ListTile(
+          leading: const Icon(Icons.healing, color: HaqqunaColors.primary),
+          title: Text(impact == null
+              ? 'الأثر طويل الأمد - أضف' : 'الأثر طويل الأمد - مُسجَّل'),
+          subtitle: impact != null
+              ? Text([
+                  if (impact!.sleepDisorders) 'اضطرابات نوم',
+                  if (impact!.flashbacks) 'استرجاع ذكريات',
+                  if (impact!.socialWithdrawal) 'انعزال',
+                  if (impact!.receivingTreatment) 'يتلقى علاجاً',
+                ].join(' · '))
+              : null,
+          trailing: const Icon(Icons.edit),
+          onTap: () async {
+            await Navigator.push(context, MaterialPageRoute(
+                builder: (_) => ImpactFormScreen(
+                    survivor: survivor, impact: impact)));
+            onReload();
+          },
+        )),
+        const Padding(padding: EdgeInsets.all(8), child: Text(
+          'التقييمات الطبية:',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        )),
+        ...medical.map((m) => Card(margin: const EdgeInsets.all(8),
+            child: ListTile(
+          leading: Icon(m.istanbulProtocolCompliant
+              ? Icons.verified : Icons.medical_services,
+              color: m.istanbulProtocolCompliant
+                  ? HaqqunaColors.success : Colors.grey),
+          title: Text('${m.assessorName} - ${m.assessmentDate}'),
+          subtitle: Text('${m.assessmentType} · ${m.assessorOrganization ?? ""}'
+              '${m.istanbulProtocolCompliant ? " ✓ متوافق إسطنبول" : ""}'),
+          trailing: IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () async {
+                await DatabaseService.instance.deleteMedical(m.localId!);
+                onReload();
+              }),
+          onTap: () async {
+            await Navigator.push(context, MaterialPageRoute(
+                builder: (_) => MedicalFormScreen(
+                    survivor: survivor, assessment: m)));
+            onReload();
+          },
+        ))).toList(),
+        if (medical.isEmpty)
+          const Padding(padding: EdgeInsets.all(16),
+              child: Text('لا توجد تقييمات - استخدم زر +')),
+      ]),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(
+              builder: (_) => MedicalFormScreen(survivor: survivor)));
+          onReload();
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// تبويب: المقابلات
+// ============================================================
+class _InterviewsTab extends StatelessWidget {
+  final Survivor survivor;
+  final List<Interview> interviews;
+  final VoidCallback onReload;
+  const _InterviewsTab({required this.survivor,
+      required this.interviews, required this.onReload});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: interviews.isEmpty
+          ? const Center(child: Text('لا توجد مقابلات'))
+          : ListView.builder(itemCount: interviews.length,
+              itemBuilder: (_, i) {
+                final iv = interviews[i];
+                return Card(margin: const EdgeInsets.all(8), child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: iv.isFirst
+                        ? HaqqunaColors.success : HaqqunaColors.primary,
+                    child: Text('${iv.sequenceNumber}',
+                        style: const TextStyle(color: Colors.white)),
+                  ),
+                  title: Text('مقابلة ${iv.interviewDate}'
+                      '${iv.isFirst ? " (الأولى)" : ""}'),
+                  subtitle: Text('${iv.methodology} · '
+                      '${iv.recorded ? "🎥 مسجَّلة" : ""}'
+                      '${iv.durationMinutes != null ? " · ${iv.durationMinutes} د" : ""}'),
+                  trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        await DatabaseService.instance.deleteInterview(iv.localId!);
+                        onReload();
+                      }),
+                  onTap: () async {
+                    await Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => InterviewFormScreen(
+                            survivor: survivor, interview: iv)));
+                    onReload();
+                  },
+                ));
+              }),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(
+              builder: (_) => InterviewFormScreen(survivor: survivor)));
+          onReload();
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// تبويب: الاجتماعي (مدخل لشاشة فرعية)
+// ============================================================
+class _SocialTab extends StatelessWidget {
+  final Survivor survivor;
+  final HouseholdSurvey? household;
+  final VoidCallback onReload;
+  const _SocialTab({required this.survivor, required this.household,
+      required this.onReload});
+
+  @override
+  Widget build(BuildContext context) {
+    if (household == null) {
+      return Center(child: Padding(padding: const EdgeInsets.all(20),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.home_outlined, size: 60, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text('لم يُسجَّل مسح اجتماعي للأسرة بعد',
+              style: TextStyle(fontSize: 16)),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () async {
+              await Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => HouseholdFormScreen(survivor: survivor)));
+              onReload();
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('ابدأ المسح الاجتماعي'),
+          ),
+        ]),
+      ));
+    }
+    return SocialSubScreen(survivor: survivor, household: household!,
+        onReload: onReload);
   }
 }
 
