@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/survivor.dart';
 import '../services/survivor_service.dart';
 import '../theme.dart';
+import 'survivor_detail_screen.dart';
 import 'survivor_form_screen.dart';
 
 class SurvivorListScreen extends StatefulWidget {
@@ -174,8 +175,8 @@ class _SurvivorListScreenState extends State<SurvivorListScreen> {
                                 await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => SurvivorFormScreen(
-                                      survivor: s,
+                                    builder: (_) => SurvivorDetailScreen(
+                                      survivorLocalId: s.localId!,
                                     ),
                                   ),
                                 );
