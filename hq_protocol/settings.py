@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "survivors.apps.SurvivorsConfig",
     "social_survey.apps.SocialSurveyConfig",
     "tutorials.apps.TutorialsConfig",
+    "mobile_api.apps.MobileApiConfig",
     "core.apps.CoreConfig",
 ]
 

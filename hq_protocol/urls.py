@@ -22,6 +22,7 @@ urlpatterns = [
     path("survivors/", include("survivors.urls")),
     path("social-survey/", include("social_survey.urls")),
     path("tutorials/", include("tutorials.urls")),
+    path("api/v1/", include("mobile_api.urls")),
     path("", include("core.urls")),
 ]
 
