@@ -196,6 +196,14 @@ class InformedConsentForm(forms.ModelForm):
 
 
 class DetentionEventForm(forms.ModelForm):
+    """نموذج واقعة اعتقال - الجهة المعتقِلة قائمة منسدلة من 128 فرع +
+    خيار للإدخال اليدوي للحالات غير المُدرَجة."""
+
+    arresting_entity_custom = forms.CharField(
+        required=False,
+        label="أو اكتب الجهة يدوياً (إن لم تكن في القائمة أعلاه)",
+    )
+
     class Meta:
         model = DetentionEvent
         exclude = ("survivor",)
@@ -210,15 +218,69 @@ class DetentionEventForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # بناء قائمة منسدلة مجمّعة حسب المحافظة
+        from collections import OrderedDict
+        from .choices import SyrianGovernorate
+
+        # ترتيب المحافظات حسب الأهمية (دمشق أولاً، ثم باقي المحافظات)
+        gov_order = [code for code, _ in SyrianGovernorate.CHOICES] + [""]
+        gov_label = {code: str(label) for code, label in SyrianGovernorate.CHOICES}
+        gov_label[""] = "أفرع أخرى"
+
+        grouped = OrderedDict((g, []) for g in gov_order)
+        for f in DetentionFacility.objects.all().order_by(
+            "parent_entity", "name_ar"
+        ):
+            key = f.governorate if f.governorate in grouped else ""
+            grouped[key].append((str(f), str(f)))
+
+        # نُنشئ هيكل choices مع optgroups
+        choices = [("", "— اختر الجهة المعتقِلة —")]
+        for gov in gov_order:
+            opts = grouped.get(gov)
+            if opts:
+                choices.append((gov_label.get(gov, gov), opts))
+        choices.append(("__custom__", "✏ أخرى - اكتب يدوياً أسفل"))
+
+        # القيمة الحالية قد لا تكون ضمن الـchoices (للسجلات القديمة) - نضيفها
+        current = self.instance.arresting_entity if self.instance.pk else ""
+        all_values = []
+        for _, opts in choices:
+            if isinstance(opts, list):
+                all_values.extend([v for v, _ in opts])
+            else:
+                all_values.append(_)
+        if current and current not in all_values:
+            choices.insert(1, (current, current))
+
+        self.fields["arresting_entity"] = forms.ChoiceField(
+            label="الجهة المعتقِلة",
+            choices=choices, required=False,
+            initial=current if current in all_values else "",
+            help_text="اختر من القائمة، أو اختر «أخرى» واكتب يدوياً.",
+        )
+
         for name, field in self.fields.items():
             widget = field.widget
             css = widget.attrs.get("class", "")
-            if isinstance(widget, (forms.CheckboxInput,)):
+            if isinstance(widget, forms.CheckboxInput):
                 widget.attrs["class"] = (css + " form-check-input").strip()
-            elif isinstance(widget, (forms.Select,)):
+            elif isinstance(widget, forms.Select):
                 widget.attrs["class"] = (css + " form-select").strip()
             else:
                 widget.attrs["class"] = (css + " form-control").strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        entity = cleaned.get("arresting_entity", "")
+        custom = (cleaned.get("arresting_entity_custom") or "").strip()
+        # إذا اختار "أخرى" أو ترك الـdropdown فارغ، نستخدم الـcustom
+        if entity == "__custom__" or not entity:
+            cleaned["arresting_entity"] = custom
+        if not cleaned.get("arresting_entity"):
+            self.add_error("arresting_entity",
+                "اختر جهة من القائمة أو اكتب اسماً يدوياً.")
+        return cleaned
 
 
 class DetentionPeriodForm(forms.ModelForm):

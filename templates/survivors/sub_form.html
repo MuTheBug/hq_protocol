@@ -52,4 +52,20 @@
     {% endif %}
   </div>
 </form>
+
+{# JavaScript للقائمة المنسدلة "الجهة المعتقِلة" - يُظهر حقل "أخرى" فقط عند الحاجة #}
+<script>
+(function() {
+  const entitySel = document.querySelector('[name="arresting_entity"]');
+  const customField = document.querySelector('[name="arresting_entity_custom"]');
+  if (!entitySel || !customField) return;
+  const customWrapper = customField.closest('.col-md-12, .col-md-6, .mb-3');
+  function toggle() {
+    const showCustom = entitySel.value === '__custom__' || entitySel.value === '';
+    if (customWrapper) customWrapper.style.display = showCustom ? '' : 'none';
+  }
+  entitySel.addEventListener('change', toggle);
+  toggle();
+})();
+</script>
 {% endblock %}

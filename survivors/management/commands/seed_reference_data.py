@@ -269,6 +269,8 @@ class Command(BaseCommand):
             "": "",
         }
 
+        # نخزّن code المحافظة (مطابق لـSyrianGovernorate.CHOICES)
+        # ليتوافق مع الفلترة والـdropdowns في الفورمز
         created_f = 0
         for name, branch, entity, gov_code, addr in FACILITIES:
             obj, created = DetentionFacility.objects.get_or_create(
@@ -276,7 +278,7 @@ class Command(BaseCommand):
                 defaults={
                     "branch_number": branch,
                     "parent_entity": entity,
-                    "governorate": gov_to_arabic.get(gov_code, gov_code),
+                    "governorate": gov_code,  # نخزّن الـcode (damascus, aleppo, ...)
                     "address": addr,
                 },
             )

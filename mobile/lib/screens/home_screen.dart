@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
-import '../models/survivor.dart';
+import '../config/api_config.dart';
 import '../services/auth_service.dart';
 import '../services/survivor_service.dart';
 import '../services/sync_service.dart';
 import '../theme.dart';
 import 'login_screen.dart';
+import 'server_config_screen.dart';
 import 'survivor_form_screen.dart';
 import 'survivor_list_screen.dart';
 
+/// الشاشة الرئيسية - تعمل بدون تسجيل دخول
+///
+/// المتطوّع يفتح التطبيق ويبدأ التوثيق فوراً. تسجيل الدخول مطلوب فقط
+/// عند الضغط على زر "مزامنة" أو "تحميل البيانات المرجعية".
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,34 +24,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _total = 0;
   int _pending = 0;
-  bool _online = true;
 
   @override
   void initState() {
     super.initState();
     _refresh();
-    SyncService.instance.startAutoSync(onSync: (r) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'مزامنة: ${r.pushed} مرفوع، ${r.pulled} مستلَم، ${r.errors} خطأ',
-            ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        _refresh();
-      }
-    });
-    SyncService.instance.hasConnection().then((v) {
-      if (mounted) setState(() => _online = v);
-    });
-  }
-
-  @override
-  void dispose() {
-    SyncService.instance.stopAutoSync();
-    super.dispose();
+    // لا نُشغّل auto-sync لأن المتطوّع قد لا يكون مسجّلاً
   }
 
   Future<void> _refresh() async {
@@ -59,26 +42,98 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// طلب تسجيل دخول إن لم يكن مُسجَّلاً، ثم تنفيذ الإجراء
+  Future<bool> _ensureLoggedIn() async {
+    if (AuthService.instance.isAuthenticated) return true;
+
+    final wantsLogin = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.login, color: HaqqunaColors.primary),
+          SizedBox(width: 8),
+          Text('تسجيل دخول مطلوب'),
+        ]),
+        content: const Text(
+          'المزامنة تحتاج لاتصال آمن بالسيرفر. يرجى تسجيل الدخول مرة واحدة.\n\n'
+          'البيانات المحلية تبقى محفوظة في كل الأحوال.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('لاحقاً'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.login, size: 18),
+            label: const Text('تسجيل دخول'),
+          ),
+        ],
+      ),
+    );
+    if (wantsLogin != true) return false;
+
+    if (!mounted) return false;
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+    return result == true && AuthService.instance.isAuthenticated;
+  }
+
   Future<void> _syncNow() async {
-    setState(() {});
+    if (_pending == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('لا توجد بيانات بانتظار المزامنة'),
+      ));
+      return;
+    }
+    final ok = await _ensureLoggedIn();
+    if (!ok) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
     final res = await SyncService.instance.syncNow();
     if (!mounted) return;
+    Navigator.pop(context); // close loading
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(
-        res.errors > 0
-            ? 'مزامنة: ${res.pushed} ↑ ${res.pulled} ↓ — ${res.errors} خطأ'
-            : '✓ مزامنة: ${res.pushed} مرفوع، ${res.pulled} مستلَم',
-      ),
+      content: Text(res.errors > 0
+          ? 'مزامنة: ${res.pushed} ↑ ${res.pulled} ↓ — ${res.errors} خطأ'
+          : '✓ مزامنة: ${res.pushed} مرفوع، ${res.pulled} مستلَم'),
     ));
     _refresh();
+  }
+
+  Future<void> _loadReference() async {
+    final ok = await _ensureLoggedIn();
+    if (!ok) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    final r = await SyncService.instance.loadReferenceData(forceRefresh: true);
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(r != null
+          ? '✓ تم تحميل ${r.facilities.length} فرع + ${r.governorates.length} محافظة'
+          : 'فشل التحميل'),
+    ));
   }
 
   Future<void> _logout() async {
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تأكيد الخروج'),
-        content: const Text('هل تريد تسجيل الخروج؟ المسوّدات غير المُزامَنة ستبقى.'),
+        title: const Text('تسجيل خروج؟'),
+        content: const Text(
+          'سيُلغى الـtoken المخزّن. البيانات المحلية تبقى محفوظة.\n'
+          'ستحتاج لتسجيل دخول مجدداً عند المزامنة.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -92,24 +147,25 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-    if (yes == true && mounted) {
+    if (yes == true) {
       await AuthService.instance.logout();
       if (!mounted) return;
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()));
+      setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
+    final isLoggedIn = AuthService.instance.isAuthenticated;
     return Scaffold(
       appBar: AppBar(
         title: const Text('حقّنا'),
         actions: [
+          // زر المزامنة - مع شارة المعلّقات
           if (_pending > 0)
             Padding(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.only(left: 8, right: 8),
               child: Badge(
                 label: Text('$_pending'),
                 child: IconButton(
@@ -125,28 +181,93 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _syncNow,
               tooltip: 'مزامنة',
             ),
+          // قائمة المزيد
           PopupMenuButton(
             itemBuilder: (_) => [
               PopupMenuItem(
-                child: ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(user?.fullNameAr.isNotEmpty == true
-                      ? user!.fullNameAr
-                      : user?.username ?? '—'),
-                  subtitle: Text(user?.roleDisplay ?? ''),
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(isLoggedIn
+                        ? (user?.fullNameAr.isNotEmpty == true
+                            ? user!.fullNameAr
+                            : user?.username ?? '—')
+                        : 'وضع محلي (غير مسجَّل)'),
+                    Text(
+                      isLoggedIn ? user?.roleDisplay ?? '' : 'لا حساب نشط',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isLoggedIn ? Colors.grey : Colors.orange,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'logout',
-                child: ListTile(
-                  leading: Icon(Icons.logout, color: Colors.red),
-                  title: Text('تسجيل خروج'),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'sync',
+                child: const ListTile(
+                  leading: Icon(Icons.sync),
+                  title: Text('مزامنة الآن'),
+                  contentPadding: EdgeInsets.zero,
                 ),
+                onTap: _syncNow,
               ),
+              PopupMenuItem(
+                value: 'reload',
+                child: const ListTile(
+                  leading: Icon(Icons.cloud_download),
+                  title: Text('تحديث البيانات المرجعية'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onTap: _loadReference,
+              ),
+              PopupMenuItem(
+                value: 'server',
+                child: const ListTile(
+                  leading: Icon(Icons.dns),
+                  title: Text('إعدادات السيرفر'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onTap: () {
+                  Future.delayed(Duration.zero, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ServerConfigScreen(),
+                      ),
+                    );
+                  });
+                },
+              ),
+              if (isLoggedIn)
+                PopupMenuItem(
+                  value: 'logout',
+                  child: const ListTile(
+                    leading: Icon(Icons.logout, color: Colors.red),
+                    title: Text('تسجيل خروج'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onTap: _logout,
+                )
+              else
+                PopupMenuItem(
+                  value: 'login',
+                  child: const ListTile(
+                    leading: Icon(Icons.login, color: HaqqunaColors.primary),
+                    title: Text('تسجيل دخول'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                    if (mounted) setState(() {});
+                  },
+                ),
             ],
-            onSelected: (v) {
-              if (v == 'logout') _logout();
-            },
           ),
         ],
       ),
@@ -155,26 +276,51 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (!_online)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  border: Border.all(color: Colors.red.shade300),
-                  borderRadius: BorderRadius.circular(8),
+            // شريط الحالة
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isLoggedIn
+                    ? HaqqunaColors.light
+                    : Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isLoggedIn
+                      ? HaqqunaColors.accent
+                      : Colors.orange,
                 ),
-                child: const Row(children: [
-                  Icon(Icons.wifi_off, color: Colors.red),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'غير متصل — يمكنك المتابعة، البيانات تُحفَظ محلياً',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                ]),
               ),
+              child: Row(children: [
+                Icon(
+                  isLoggedIn ? Icons.cloud_done : Icons.phonelink_off,
+                  color: isLoggedIn
+                      ? HaqqunaColors.primary
+                      : Colors.orange,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isLoggedIn
+                            ? 'متصل بـ ${ApiConfig.baseUrl}'
+                            : 'وضع محلي - بياناتك محفوظة على الجهاز فقط',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        isLoggedIn
+                            ? 'يمكنك المزامنة في أي وقت'
+                            : 'سجّل دخول عند الحاجة للمزامنة',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 16),
+
             // بطاقات إحصاء
             Row(children: [
               Expanded(
@@ -198,13 +344,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ]),
             const SizedBox(height: 20),
+
             // قائمة سريعة
             Card(
               child: ListTile(
                 leading: const Icon(Icons.person_add,
                     color: HaqqunaColors.primary, size: 32),
                 title: const Text('ملف ناجٍ جديد'),
-                subtitle: const Text('إنشاء ملف جديد - يعمل offline'),
+                subtitle: const Text('يحفظ محلياً فوراً'),
                 trailing: const Icon(Icons.arrow_back_ios),
                 onTap: () async {
                   await Navigator.push(
@@ -237,12 +384,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.sync,
-                    color: HaqqunaColors.primary, size: 32),
-                title: const Text('مزامنة الآن'),
-                subtitle: Text(_pending > 0
-                    ? '$_pending مسودة بانتظار الرفع'
-                    : 'كل شيء متزامن'),
+                leading: Icon(Icons.sync,
+                    color: _pending > 0
+                        ? HaqqunaColors.warning
+                        : HaqqunaColors.success,
+                    size: 32),
+                title: Text(_pending > 0
+                    ? 'مزامنة الآن ($_pending معلّق)'
+                    : 'مزامنة الآن'),
+                subtitle: Text(isLoggedIn
+                    ? 'متصل ومُجاز - اضغط للمزامنة'
+                    : 'يتطلب تسجيل دخول'),
                 trailing: const Icon(Icons.arrow_back_ios),
                 onTap: _syncNow,
               ),
@@ -254,9 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const SurvivorFormScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const SurvivorFormScreen()),
           );
           _refresh();
         },
@@ -284,16 +434,16 @@ class _StatCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, size: 36, color: color),
-            const SizedBox(height: 8),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 28, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: const TextStyle(fontSize: 13)),
-          ],
-        ),
+        child: Column(children: [
+          Icon(icon, size: 36, color: color),
+          const SizedBox(height: 8),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: color)),
+          Text(label, style: const TextStyle(fontSize: 13)),
+        ]),
       ),
     );
   }
