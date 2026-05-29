@@ -48,21 +48,10 @@ class HaqqunaTheme {
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
-      cardTheme: CardThemeData(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.symmetric(vertical: 6),
-      ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: HaqqunaColors.primary,
         foregroundColor: Colors.white,
       ),
     );
-  }
-
-  static ThemeData dark() {
-    return light().copyWith(brightness: Brightness.dark);
   }
 }

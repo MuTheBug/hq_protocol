@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../config/api_config.dart';
-import '../services/auth_service.dart';
-import '../services/survivor_service.dart';
-import '../services/sync_service.dart';
+import '../data/entities.dart';
+import '../data/reference_data.dart';
+import '../db/record.dart';
+import '../db/record_repository.dart';
 import '../theme.dart';
-import 'login_screen.dart';
-import 'server_config_screen.dart';
-import 'survivor_form_screen.dart';
-import 'survivor_list_screen.dart';
+import '../widgets/common.dart';
+import '../widgets/record_form_screen.dart';
+import 'survivor_detail_screen.dart';
+import 'sync_screen.dart';
 
-/// الشاشة الرئيسية - تعمل بدون تسجيل دخول
-///
-/// المتطوّع يفتح التطبيق ويبدأ التوثيق فوراً. تسجيل الدخول مطلوب فقط
-/// عند الضغط على زر "مزامنة" أو "تحميل البيانات المرجعية".
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,428 +18,243 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _total = 0;
+  final RecordRepository _repo = RecordRepository.instance;
+  final TextEditingController _search = TextEditingController();
+
+  List<Record> _survivors = [];
   int _pending = 0;
+  bool _loading = true;
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
-    _refresh();
-    // لا نُشغّل auto-sync لأن المتطوّع قد لا يكون مسجّلاً
+    _load();
   }
 
-  Future<void> _refresh() async {
-    final list = await SurvivorService.instance.list();
-    final pending = await SurvivorService.instance.pendingCount();
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final list = await _repo.listSurvivors(query: _query);
+    final pending = await _repo.countPendingSync();
     if (!mounted) return;
     setState(() {
-      _total = list.length;
+      _survivors = list;
       _pending = pending;
+      _loading = false;
     });
   }
 
-  /// طلب تسجيل دخول إن لم يكن مُسجَّلاً، ثم تنفيذ الإجراء
-  Future<bool> _ensureLoggedIn() async {
-    if (AuthService.instance.isAuthenticated) return true;
-
-    final wantsLogin = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(children: [
-          Icon(Icons.login, color: HaqqunaColors.primary),
-          SizedBox(width: 8),
-          Text('تسجيل دخول مطلوب'),
-        ]),
-        content: const Text(
-          'المزامنة تحتاج لاتصال آمن بالسيرفر. يرجى تسجيل الدخول مرة واحدة.\n\n'
-          'البيانات المحلية تبقى محفوظة في كل الأحوال.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('لاحقاً'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
-            icon: const Icon(Icons.login, size: 18),
-            label: const Text('تسجيل دخول'),
-          ),
-        ],
-      ),
-    );
-    if (wantsLogin != true) return false;
-
-    if (!mounted) return false;
-    final result = await Navigator.push<bool>(
+  Future<void> _addSurvivor() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
-    return result == true && AuthService.instance.isAuthenticated;
-  }
-
-  Future<void> _syncNow() async {
-    if (_pending == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('لا توجد بيانات بانتظار المزامنة'),
-      ));
-      return;
-    }
-    final ok = await _ensureLoggedIn();
-    if (!ok) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-    final res = await SyncService.instance.syncNow();
-    if (!mounted) return;
-    Navigator.pop(context); // close loading
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(res.errors > 0
-          ? 'مزامنة: ${res.pushed} ↑ ${res.pulled} ↓ — ${res.errors} خطأ'
-          : '✓ مزامنة: ${res.pushed} مرفوع، ${res.pulled} مستلَم'),
-    ));
-    _refresh();
-  }
-
-  Future<void> _loadReference() async {
-    final ok = await _ensureLoggedIn();
-    if (!ok) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-    final r = await SyncService.instance.loadReferenceData(forceRefresh: true);
-    if (!mounted) return;
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(r != null
-          ? '✓ تم تحميل ${r.facilities.length} فرع + ${r.governorates.length} محافظة'
-          : 'فشل التحميل'),
-    ));
-  }
-
-  Future<void> _logout() async {
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('تسجيل خروج؟'),
-        content: const Text(
-          'سيُلغى الـtoken المخزّن. البيانات المحلية تبقى محفوظة.\n'
-          'ستحتاج لتسجيل دخول مجدداً عند المزامنة.',
+      MaterialPageRoute(
+        builder: (_) => RecordFormScreen(
+          spec: kSurvivorSpec,
+          initial: defaultsFor('survivor'),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('خروج'),
-          ),
-        ],
       ),
     );
-    if (yes == true) {
-      await AuthService.instance.logout();
-      if (!mounted) return;
-      setState(() {});
-    }
+    if (result == null) return;
+    final localId = await _repo.insert('survivor', result);
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SurvivorDetailScreen(survivorLocalId: localId),
+      ),
+    );
+    _load();
+  }
+
+  Future<void> _openSync() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SyncScreen()),
+    );
+    _load();
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser;
-    final isLoggedIn = AuthService.instance.isAuthenticated;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('حقّنا'),
+        title: const Text('حقّنا — توثيق الناجين'),
         actions: [
-          // زر المزامنة - مع شارة المعلّقات
-          if (_pending > 0)
-            Padding(
-              padding: const EdgeInsets.only(left: 8, right: 8),
-              child: Badge(
-                label: Text('$_pending'),
-                child: IconButton(
-                  icon: const Icon(Icons.sync),
-                  onPressed: _syncNow,
-                  tooltip: 'مزامنة',
-                ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.sync),
+                tooltip: 'المزامنة',
+                onPressed: _openSync,
               ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.sync),
-              onPressed: _syncNow,
-              tooltip: 'مزامنة',
-            ),
-          // قائمة المزيد
-          PopupMenuButton(
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(isLoggedIn
-                        ? (user?.fullNameAr.isNotEmpty == true
-                            ? user!.fullNameAr
-                            : user?.username ?? '—')
-                        : 'وضع محلي (غير مسجَّل)'),
-                    Text(
-                      isLoggedIn ? user?.roleDisplay ?? '' : 'لا حساب نشط',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isLoggedIn ? Colors.grey : Colors.orange,
-                      ),
+              if (_pending > 0)
+                Positioned(
+                  top: 8,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: HaqqunaColors.danger,
+                      shape: BoxShape.circle,
                     ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'sync',
-                child: const ListTile(
-                  leading: Icon(Icons.sync),
-                  title: Text('مزامنة الآن'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onTap: _syncNow,
-              ),
-              PopupMenuItem(
-                value: 'reload',
-                child: const ListTile(
-                  leading: Icon(Icons.cloud_download),
-                  title: Text('تحديث البيانات المرجعية'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onTap: _loadReference,
-              ),
-              PopupMenuItem(
-                value: 'server',
-                child: const ListTile(
-                  leading: Icon(Icons.dns),
-                  title: Text('إعدادات السيرفر'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                onTap: () {
-                  Future.delayed(Duration.zero, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ServerConfigScreen(),
-                      ),
-                    );
-                  });
-                },
-              ),
-              if (isLoggedIn)
-                PopupMenuItem(
-                  value: 'logout',
-                  child: const ListTile(
-                    leading: Icon(Icons.logout, color: Colors.red),
-                    title: Text('تسجيل خروج'),
-                    contentPadding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      '$_pending',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
                   ),
-                  onTap: _logout,
-                )
-              else
-                PopupMenuItem(
-                  value: 'login',
-                  child: const ListTile(
-                    leading: Icon(Icons.login, color: HaqqunaColors.primary),
-                    title: Text('تسجيل دخول'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onTap: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    );
-                    if (mounted) setState(() {});
-                  },
                 ),
             ],
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // شريط الحالة
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isLoggedIn
-                    ? HaqqunaColors.light
-                    : Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isLoggedIn
-                      ? HaqqunaColors.accent
-                      : Colors.orange,
-                ),
-              ),
-              child: Row(children: [
-                Icon(
-                  isLoggedIn ? Icons.cloud_done : Icons.phonelink_off,
-                  color: isLoggedIn
-                      ? HaqqunaColors.primary
-                      : Colors.orange,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isLoggedIn
-                            ? 'متصل بـ ${ApiConfig.baseUrl}'
-                            : 'وضع محلي - بياناتك محفوظة على الجهاز فقط',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _search,
+              decoration: InputDecoration(
+                hintText: 'بحث: اسم، رقم قضية، رقم وطني...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _search.clear();
+                          _query = '';
+                          _load();
+                        },
                       ),
-                      Text(
-                        isLoggedIn
-                            ? 'يمكنك المزامنة في أي وقت'
-                            : 'سجّل دخول عند الحاجة للمزامنة',
-                        style: const TextStyle(fontSize: 12),
+              ),
+              onChanged: (v) {
+                _query = v;
+                _load();
+              },
+            ),
+          ),
+          _statusBar(),
+          const Divider(height: 1),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _survivors.isEmpty
+                    ? _emptyState()
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView.builder(
+                          itemCount: _survivors.length,
+                          itemBuilder: (_, i) => _tile(_survivors[i]),
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 16),
-
-            // بطاقات إحصاء
-            Row(children: [
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.people,
-                  label: 'الناجون',
-                  value: '$_total',
-                  color: HaqqunaColors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.cloud_upload,
-                  label: 'بانتظار المزامنة',
-                  value: '$_pending',
-                  color: _pending > 0
-                      ? HaqqunaColors.warning
-                      : HaqqunaColors.success,
-                ),
-              ),
-            ]),
-            const SizedBox(height: 20),
-
-            // قائمة سريعة
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.person_add,
-                    color: HaqqunaColors.primary, size: 32),
-                title: const Text('ملف ناجٍ جديد'),
-                subtitle: const Text('يحفظ محلياً فوراً'),
-                trailing: const Icon(Icons.arrow_back_ios),
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SurvivorFormScreen(),
-                    ),
-                  );
-                  _refresh();
-                },
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.list_alt,
-                    color: HaqqunaColors.primary, size: 32),
-                title: const Text('قائمة الناجين'),
-                subtitle: Text('$_total ملف محلياً'),
-                trailing: const Icon(Icons.arrow_back_ios),
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SurvivorListScreen(),
-                    ),
-                  );
-                  _refresh();
-                },
-              ),
-            ),
-            Card(
-              child: ListTile(
-                leading: Icon(Icons.sync,
-                    color: _pending > 0
-                        ? HaqqunaColors.warning
-                        : HaqqunaColors.success,
-                    size: 32),
-                title: Text(_pending > 0
-                    ? 'مزامنة الآن ($_pending معلّق)'
-                    : 'مزامنة الآن'),
-                subtitle: Text(isLoggedIn
-                    ? 'متصل ومُجاز - اضغط للمزامنة'
-                    : 'يتطلب تسجيل دخول'),
-                trailing: const Icon(Icons.arrow_back_ios),
-                onTap: _syncNow,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SurvivorFormScreen()),
-          );
-          _refresh();
-        },
+        onPressed: _addSurvivor,
         icon: const Icon(Icons.add),
         label: const Text('ملف جديد'),
       ),
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  Widget _statusBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: Row(
+        children: [
+          Text('${_survivors.length} ملف',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const Spacer(),
+          Icon(_pending > 0 ? Icons.cloud_off : Icons.cloud_done,
+              size: 16,
+              color:
+                  _pending > 0 ? HaqqunaColors.warning : HaqqunaColors.success),
+          const SizedBox(width: 4),
+          Text(
+            _pending > 0 ? '$_pending بانتظار المزامنة' : 'كل البيانات مُزامَنة',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _emptyState() {
+    return ListView(
+      children: const [
+        SizedBox(height: 120),
+        Icon(Icons.folder_open, size: 70, color: Colors.grey),
+        SizedBox(height: 16),
+        Text('لا توجد ملفات بعد',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey, fontSize: 16)),
+        SizedBox(height: 6),
+        Text('اضغط «ملف جديد» لبدء توثيق ناجٍ',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _tile(Record r) {
+    final d = r.data;
+    final cls = d['file_classification'] as String?;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(children: [
-          Icon(icon, size: 36, color: color),
-          const SizedBox(height: 8),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: color)),
-          Text(label, style: const TextStyle(fontSize: 13)),
-        ]),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: classColor(cls),
+          child: Text(classLetter(cls),
+              style: const TextStyle(color: Colors.white)),
+        ),
+        title: Text(fullNameOf(d)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(r.str('case_reference'),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Icon(d['gender'] == 'female' ? Icons.female : Icons.male,
+                    size: 14),
+                if (r.str('governorate_at_detention').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Text(
+                        Ref.labelFor(Ref.governorates,
+                            r.str('governorate_at_detention')),
+                        style: const TextStyle(fontSize: 12)),
+                  ),
+              ],
+            ),
+          ],
+        ),
+        trailing: Icon(
+          r.needsSync ? Icons.cloud_off : Icons.cloud_done,
+          color: r.needsSync ? HaqqunaColors.warning : HaqqunaColors.success,
+          size: 20,
+        ),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  SurvivorDetailScreen(survivorLocalId: r.localId),
+            ),
+          );
+          _load();
+        },
       ),
     );
   }
