@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/entities.dart';
+import '../data/field_spec.dart';
 import '../db/app_database.dart';
 import '../db/record_repository.dart';
 
@@ -132,22 +135,32 @@ class SyncService {
     }
 
     final bundles = <Map<String, dynamic>>[];
+    final attachments = <String, File>{};
     for (final sid in dirty) {
       final b = await _buildBundle(sid);
-      if (b != null) bundles.add(b);
+      if (b == null) continue;
+      _extractAttachments(b, attachments);
+      bundles.add(b);
     }
 
     try {
-      final resp = await http
-          .post(
-            Uri.parse('$_api/sync/push/'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Token $_token',
-            },
-            body: jsonEncode({'survivors': bundles, 'device_id': 'flutter-app'}),
-          )
-          .timeout(const Duration(seconds: 90));
+      final request = http.MultipartRequest(
+          'POST', Uri.parse('$_api/sync/push/'));
+      request.headers['Authorization'] = 'Token $_token';
+      request.fields['payload'] =
+          jsonEncode({'survivors': bundles, 'device_id': 'flutter-app'});
+      for (final entry in attachments.entries) {
+        final f = entry.value;
+        if (!await f.exists()) continue;
+        request.files.add(await http.MultipartFile.fromPath(
+          entry.key,
+          f.path,
+          filename: p.basename(f.path),
+        ));
+      }
+      final streamed =
+          await request.send().timeout(const Duration(seconds: 180));
+      final resp = await http.Response.fromStream(streamed);
 
       if (resp.statusCode == 401) {
         await logout();
@@ -188,6 +201,37 @@ class SyncService {
     } catch (_) {
       return const SyncResult(
           false, 'تعذّر الوصول للسيرفر أثناء المزامنة — حاول لاحقاً');
+    }
+  }
+
+  /// يمشي على الحزمة المُجمَّعة ويستبدل كل مسار صورة محلية برمز
+  /// `att:<token>` ويضيف الملف إلى خريطة المرفقات للرفع.
+  void _extractAttachments(
+      Map<String, dynamic> bundle, Map<String, File> out) {
+    void process(EntitySpec spec, Map<String, dynamic> row) {
+      for (final f in spec.fields) {
+        if (f.type != FieldType.image) continue;
+        final v = row[f.key];
+        if (v is! String || v.isEmpty || v.startsWith('att:')) continue;
+        final file = File(v);
+        if (!file.existsSync()) continue;
+        final token = 'att:${out.length}-${DateTime.now().microsecondsSinceEpoch}';
+        out[token] = file;
+        row[f.key] = token;
+      }
+    }
+
+    process(kSurvivorSpec, bundle);
+    for (final entry in _bundleKeys.entries) {
+      final spec = entityByTable(entry.key);
+      final v = bundle[entry.value];
+      if (spec.singleton) {
+        if (v is Map<String, dynamic>) process(spec, v);
+      } else if (v is List) {
+        for (final item in v) {
+          if (item is Map<String, dynamic>) process(spec, item);
+        }
+      }
     }
   }
 

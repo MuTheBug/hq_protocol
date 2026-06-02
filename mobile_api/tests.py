@@ -209,3 +209,43 @@ class FullBundleSyncTest(TestCase):
         self.assertEqual(
             SurvivorProfile.objects.filter(
                 case_reference="HQ-TEST-0001").count(), 1)
+
+    def test_multipart_attachments_persist(self):
+        """رفع متعدد الأجزاء يحفظ صور الوثائق والصور الشخصية."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # bytes صورة JPEG صغيرة صالحة (إطار 1×1 بكسل)
+        jpeg = bytes.fromhex(
+            "ffd8ffe000104a46494600010100000100010000"
+            "ffdb004300080606070605080707070909080a0c"
+            "140d0c0b0b0c1912130f141d1a1f1e1d1a1c1c20"
+            "242e2720222c231c1c2837292c30313434341f27"
+            "393d38323c2e333432ffc0000b08000100010101"
+            "1100ffc4001f0000010501010101010100000000"
+            "0000000001020304050607080a0bffda00080101"
+            "00003f10f9ffd9"
+        )
+        bundle = self._bundle()
+        # ربط رمز att بصورة الناجي والوثيقة
+        bundle["photo_recent"] = "att:photo1"
+        bundle["documents"][0]["file"] = "att:doc1"
+
+        resp = self.client.post(
+            "/api/v1/sync/push/",
+            data={
+                "payload": json.dumps({"survivors": [bundle],
+                                       "device_id": "test"}),
+                "att:photo1": SimpleUploadedFile(
+                    "recent.jpg", jpeg, content_type="image/jpeg"),
+                "att:doc1": SimpleUploadedFile(
+                    "release.jpg", jpeg, content_type="image/jpeg"),
+            },
+            HTTP_AUTHORIZATION=f"Token {self.token.key}",
+        )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(resp.json()["success"], 1, resp.content)
+
+        s = SurvivorProfile.objects.get(case_reference="HQ-TEST-0001")
+        self.assertTrue(s.photo_recent.name)
+        self.assertTrue(s.documents.get().file.name)
+        self.assertEqual(s.documents.get().file.size, len(jpeg))

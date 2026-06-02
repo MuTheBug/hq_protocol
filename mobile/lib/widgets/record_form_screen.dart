@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/field_spec.dart';
+import '../services/attachment_service.dart';
 import '../theme.dart';
 import 'common.dart';
 
@@ -48,6 +51,9 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
       } else if (f.type == FieldType.multiChoice) {
         _values[f.key] =
             (v is List) ? v.map((e) => e.toString()).toList() : <String>[];
+      } else if (f.type == FieldType.image) {
+        _values[f.key] =
+            (v == null || (v is String && v.isEmpty)) ? null : v.toString();
       } else {
         // choice أو date
         _values[f.key] =
@@ -110,6 +116,9 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
           break;
         case FieldType.multiChoice:
           result[f.key] = List<String>.from(_values[f.key] as List);
+          break;
+        case FieldType.image:
+          result[f.key] = _values[f.key];
           break;
       }
     }
@@ -183,6 +192,8 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
         return _choiceField(f);
       case FieldType.multiChoice:
         return _multiChoiceField(f);
+      case FieldType.image:
+        return _imageField(f);
     }
   }
 
@@ -329,6 +340,121 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
     );
   }
 
+  Widget _imageField(FieldSpec f) {
+    final path = _values[f.key] as String?;
+    final hasImage = path != null && path.isNotEmpty;
+    final att = AttachmentService.instance;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.image_outlined,
+                    color: HaqqunaColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: Text(_labelText(f),
+                        style: const TextStyle(fontWeight: FontWeight.bold))),
+                if (hasImage)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: 'إزالة الصورة',
+                    onPressed: () async {
+                      await att.tryDelete(path);
+                      setState(() => _values[f.key] = null);
+                    },
+                  ),
+              ],
+            ),
+            if (f.help != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(f.help!,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ),
+            const SizedBox(height: 4),
+            if (hasImage)
+              InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => _ImageViewer(path: path),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(path),
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 180,
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'الصورة غير متوفرة',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Container(
+                height: 90,
+                decoration: BoxDecoration(
+                  color: HaqqunaColors.light,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                alignment: Alignment.center,
+                child: const Text('لا توجد صورة بعد',
+                    style: TextStyle(color: Colors.grey)),
+              ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final path = await att.takePhoto();
+                      if (path != null) {
+                        final old = _values[f.key] as String?;
+                        await att.tryDelete(old);
+                        setState(() => _values[f.key] = path);
+                      }
+                    },
+                    icon: const Icon(Icons.photo_camera),
+                    label: const Text('التقاط صورة'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final path = await att.pickFromGallery();
+                      if (path != null) {
+                        final old = _values[f.key] as String?;
+                        await att.tryDelete(old);
+                        setState(() => _values[f.key] = path);
+                      }
+                    },
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('من المعرض'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   DateTime? _parseDate(String? s) {
     if (s == null || s.isEmpty) return null;
     return DateTime.tryParse(s);
@@ -337,5 +463,28 @@ class _RecordFormScreenState extends State<RecordFormScreen> {
   String _fmt(DateTime d) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${d.year}-${two(d.month)}-${two(d.day)}';
+  }
+}
+
+class _ImageViewer extends StatelessWidget {
+  final String path;
+  const _ImageViewer({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 5,
+          child: Image.file(File(path)),
+        ),
+      ),
+    );
   }
 }

@@ -16,8 +16,12 @@ dependencies:
   # تخزين محلي (offline-first)
   sqflite: ^2.3.0
   path: ^1.8.3
+  path_provider: ^2.1.1
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0
+
+  # التقاط الصور (كاميرا + معرض/Screenshots)
+  image_picker: ^1.0.7
 
   # المزامنة مع السيرفر (عند الطلب فقط)
   http: ^1.1.0

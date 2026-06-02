@@ -238,10 +238,9 @@ def survivor_create(request):
             )
             return redirect("survivors:consent_edit", pk=survivor.pk)
     else:
-        last = SurvivorProfile.objects.order_by("-id").first()
-        next_num = (last.id if last else 0) + 1
+        from .models import generate_case_reference
         form = SurvivorProfileForm(initial={
-            "case_reference": f"HQ-2026-{next_num:04d}",
+            "case_reference": generate_case_reference(),
         })
     return render(request, "survivors/form.html", {
         "form": form, "title": _("إنشاء ملف ناجٍ جديد"),

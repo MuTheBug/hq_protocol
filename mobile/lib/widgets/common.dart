@@ -73,9 +73,11 @@ String recordHeadline(String table, Map<String, dynamic> d) {
       return s('witness_name').isEmpty ? 'شاهد' : s('witness_name');
     case 'document':
       final t = s('title');
-      return t.isEmpty
+      final marker = s('file').isNotEmpty ? ' · 📎' : '';
+      final base = t.isEmpty
           ? Ref.labelFor(Ref.documentTypes, s('document_type'))
           : t;
+      return '$base$marker';
     case 'medical':
       return [
         Ref.labelFor(Ref.assessmentTypes, s('assessment_type')),

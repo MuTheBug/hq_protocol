@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'field_spec.dart';
@@ -15,7 +17,9 @@ final EntitySpec kSurvivorSpec = EntitySpec(
   icon: Icons.person,
   fields: [
     const FieldSpec('case_reference', 'رقم القضية الداخلي', FieldType.text,
-        section: 'الهوية', required: true, help: 'مثال: HQ-2025-0001'),
+        section: 'الهوية',
+        required: true,
+        help: 'يُولَّد آلياً. يمكنك تعديله إذا لزم.'),
     const FieldSpec('first_name', 'الاسم', FieldType.text,
         section: 'الهوية', required: true),
     const FieldSpec('father_name', 'اسم الأب', FieldType.text,
@@ -83,6 +87,15 @@ final EntitySpec kSurvivorSpec = EntitySpec(
         section: 'الإقامة الحالية'),
     const FieldSpec('next_of_kin_phone', 'رقم القريب', FieldType.text,
         section: 'الإقامة الحالية'),
+
+    // الصور
+    const FieldSpec('photo_recent', 'صورة حديثة للناجي', FieldType.image,
+        section: 'الصور',
+        help: 'التقط أو اختر صورة شخصية حديثة'),
+    const FieldSpec(
+        'photo_before_detention', 'صورة قبل الاعتقال', FieldType.image,
+        section: 'الصور',
+        help: 'صورة سابقة (إن أمكن) لمساعدة التعرّف على الهوية'),
 
     // التصنيف والإحالات
     FieldSpec('file_classification', 'تصنيف الملف', FieldType.choice,
@@ -153,6 +166,10 @@ final EntitySpec kConsentSpec = EntitySpec(
     const FieldSpec('intended_uses_explained', 'شُرحت الاستخدامات المحتملة',
         FieldType.boolean,
         section: 'الحقوق المشروحة'),
+    const FieldSpec(
+        'consent_form_file', 'صورة نموذج الموافقة الموقّع', FieldType.image,
+        section: 'التوثيق',
+        help: 'التقط صورة لنموذج الموافقة بعد توقيع الناجي'),
     const FieldSpec('consent_withdrawn', 'سُحبت الموافقة', FieldType.boolean,
         section: 'السحب'),
     const FieldSpec('withdrawal_date', 'تاريخ سحب الموافقة', FieldType.date,
@@ -327,6 +344,9 @@ final EntitySpec kWitnessSpec = EntitySpec(
         section: 'الاستقلالية والموافقة'),
     const FieldSpec('declaration_date', 'تاريخ البيان', FieldType.date,
         section: 'الاستقلالية والموافقة'),
+    const FieldSpec(
+        'declaration_file', 'صورة البيان الموقّع', FieldType.image,
+        section: 'الاستقلالية والموافقة'),
     const FieldSpec('full_testimony', 'نص الشهادة الكامل', FieldType.multiline,
         section: 'الشهادة', required: true),
   ],
@@ -350,6 +370,8 @@ final EntitySpec kDocumentSpec = EntitySpec(
         required: true, help: 'مَن، متى، أين، كيف'),
     const FieldSpec('date_obtained', 'تاريخ الاستلام', FieldType.date,
         required: true),
+    const FieldSpec('file', 'صورة/مرفق الوثيقة', FieldType.image,
+        help: 'التقط صورة للوثيقة أو اختر صورة موجودة (Screenshot)'),
     const FieldSpec('original_url', 'الرابط الأصلي', FieldType.text),
     const FieldSpec('url_archived_at', 'نسخة مؤرشفة (Archive.org)',
         FieldType.text),
@@ -412,6 +434,8 @@ final EntitySpec kMedicalSpec = EntitySpec(
     const FieldSpec('consent_to_share', 'موافقة على مشاركة التقرير',
         FieldType.boolean,
         section: 'التوافق'),
+    const FieldSpec('report_file', 'صورة/مرفق التقرير الطبي', FieldType.image,
+        section: 'التوافق', help: 'صورة لتقرير الفحص الموقّع'),
     const FieldSpec('notes', 'ملاحظات', FieldType.multiline, section: 'التوافق'),
   ],
 );
@@ -927,11 +951,24 @@ EntitySpec entityByTable(String table) {
   return kRelatedEntities.firstWhere((e) => e.table == table);
 }
 
+/// رقم قضية مولّد آلياً (مطابق لصيغة `generate_case_reference()` في Django):
+/// `HQ-<السنة>-<6 خانات هكساديسيمال>` — احتمال التصادم منخفض جداً.
+String newCaseReference() {
+  final year = DateTime.now().year;
+  final rng = math.Random.secure();
+  final bytes = List<int>.generate(3, (_) => rng.nextInt(256));
+  final hex = bytes
+      .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+      .join();
+  return 'HQ-$year-$hex';
+}
+
 /// القيم الافتراضية لسجل جديد (تطابق defaults في Django).
 Map<String, dynamic> defaultsFor(String table) {
   switch (table) {
     case 'survivor':
       return {
+        'case_reference': newCaseReference(),
         'nationality': 'سورية',
         'gender': 'male',
         'file_classification': 'draft',

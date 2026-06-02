@@ -217,6 +217,14 @@ SURVIVOR_WRITABLE = {
     "file_classification",
     "medical_referral_offered", "psychological_referral_offered",
     "legal_aid_offered", "referral_notes",
+    # حقول الصور (يُسمح بتعيينها بكائنات UploadedFile)
+    "photo_recent", "photo_before_detention",
+}
+
+# الحقول التي يجب تخطّيها عند الإنشاء (لأنها UploadedFile لا strings)
+SURVIVOR_CREATE_TEXT_ONLY = {
+    f for f in SURVIVOR_WRITABLE
+    if f not in {"photo_recent", "photo_before_detention"}
 }
 
 
@@ -417,7 +425,7 @@ def _apply_bundle(survivor, item):
 
     if isinstance(item.get("documents"), list):
         survivor.documents.all().delete()
-        allowed = _model_fields(SupportingDocument, skip=("file",))
+        allowed = _model_fields(SupportingDocument)
         for row in item["documents"]:
             if isinstance(row, dict):
                 obj = SupportingDocument(survivor=survivor)
@@ -426,7 +434,7 @@ def _apply_bundle(survivor, item):
 
     if isinstance(item.get("medical_assessments"), list):
         survivor.medical_assessments.all().delete()
-        allowed = _model_fields(MedicalAssessment, skip=("report_file",))
+        allowed = _model_fields(MedicalAssessment)
         for row in item["medical_assessments"]:
             if isinstance(row, dict):
                 obj = MedicalAssessment(survivor=survivor)
@@ -508,15 +516,52 @@ def _apply_social(survivor, item):
                 obj.save()
 
 
+def _resolve_attachments(payload, files):
+    """يستبدل القيم النصية بصيغة att:<token> بكائنات الملفات المرفوعة."""
+    if not files:
+        return
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in list(node.items()):
+                if isinstance(v, str) and v.startswith("att:"):
+                    f = files.get(v)
+                    if f is not None:
+                        node[k] = f
+                    else:
+                        node[k] = None
+                else:
+                    walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(payload)
+
+
 @csrf_exempt
 @require_documenter
 @require_http_methods(["POST"])
 def sync_push(request):
-    """دفع تغييرات الجوال للسيرفر دفعة واحدة (الملف الكامل: هوية + كل الأقسام)."""
-    try:
-        payload = json.loads(request.body or b"{}")
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "invalid_json"}, status=400)
+    """دفع تغييرات الجوال للسيرفر دفعة واحدة (الملف الكامل + المرفقات)."""
+    files_map = {}
+    content_type = request.META.get("CONTENT_TYPE", "")
+    if content_type.startswith("multipart/"):
+        raw = request.POST.get("payload", "")
+        try:
+            payload = json.loads(raw or "{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "invalid_json"}, status=400)
+        for key in request.FILES:
+            if key.startswith("att:"):
+                files_map[key] = request.FILES[key]
+    else:
+        try:
+            payload = json.loads(request.body or b"{}")
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "invalid_json"}, status=400)
+
+    _resolve_attachments(payload, files_map)
 
     survivors_in = payload.get("survivors", [])
     device_id = payload.get("device_id", "")
@@ -548,9 +593,15 @@ def sync_push(request):
                     survivor = existing
                     action = "updated"
                 else:
+                    text_only = {k: v for k, v in clean.items()
+                                 if k in SURVIVOR_CREATE_TEXT_ONLY}
                     survivor = SurvivorProfile.objects.create(
-                        **clean, documenter=request.api_user,
+                        **text_only, documenter=request.api_user,
                     )
+                    for k, v in clean.items():
+                        if k not in SURVIVOR_CREATE_TEXT_ONLY:
+                            setattr(survivor, k, v)
+                    survivor.save()
                     action = "created"
                 _apply_bundle(survivor, item)
             results.append({

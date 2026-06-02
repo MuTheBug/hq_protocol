@@ -9,12 +9,30 @@
 """
 
 import hashlib
+import secrets
 import uuid
+from datetime import date
 
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+
+
+def generate_case_reference():
+    """يولّد رقم قضية فريداً يصعب تكراره (مع تجنّب التصادمات).
+
+    الصيغة: ``HQ-<السنة>-<6 خانات هكساديسيمال>``  مثلاً ``HQ-2026-3F8A2C``.
+    احتمال التصادم لكل سنة < 1/16M؛ وإن وقع نُعيد المحاولة.
+    """
+    year = date.today().year
+    for _attempt in range(8):
+        suffix = secrets.token_hex(3).upper()  # 6 خانات
+        candidate = f"HQ-{year}-{suffix}"
+        if not SurvivorProfile.all_objects.filter(
+                case_reference=candidate).exists():
+            return candidate
+    return f"HQ-{year}-{secrets.token_hex(4).upper()}"
 
 from .choices import (
     Country, InterviewLanguage, MaritalStatus, OccupationCategory,
